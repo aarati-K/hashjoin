@@ -28,6 +28,12 @@ for j in range(d):
     if (i == f):
         break
 
+j = 0;
+while i < f:
+    fact[i] = dim[j]
+    i += 1
+    j += 1
+
 for i in range(3):
     random.shuffle(fact)
     random.shuffle(dim)
