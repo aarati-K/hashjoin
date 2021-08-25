@@ -102,6 +102,7 @@ void* Hashjoin::exec(Table &fact, int factcol, Table &dim, int dimcol) {
 
     cout << "Build time: " << build_time << endl;
     cout << "Probe time: " << probe_time << endl;
+    cout << "Total time: " << build_time + probe_time << endl;
     cout << "Displacement: " << displacement << endl;
     return output;
 }
