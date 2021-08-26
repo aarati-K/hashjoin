@@ -104,8 +104,14 @@ void* Hashjoin::exec(Table &fact, int factcol, Table &dim, int dimcol) {
     m.probe_cycles = cycles_end - cycles_start - m.materialize_cycles;
     m.probe_and_materialize_time = getTimeDiff(start_time, end_time);
 
+    float m_ratio = float(m.materialize_cycles)/float(m.materialize_cycles + m.probe_cycles);
+    m.materialize_time = m_ratio * m.probe_and_materialize_time;
+    m.probe_time = (1 - m_ratio) * m.probe_and_materialize_time;
+
     // Metrics
     cout << "Build time: " << m.build_time << endl;
+    cout << "Probe time: " << m.probe_time << endl;
+    cout << "Materialize time: " << m.materialize_time << endl;
     cout << "Probe + Materialize time: " << m.probe_and_materialize_time << endl;
     cout << "Total time: " << m.build_time + m.probe_and_materialize_time << endl;
     cout << "Build cycles: " << m.build_cycles << endl;

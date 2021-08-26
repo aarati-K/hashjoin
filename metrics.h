@@ -10,6 +10,8 @@ using namespace std;
 typedef struct Metrics {
     ulong build_time = 0;
     ulong probe_and_materialize_time = 0;
+    ulong probe_time = 0;
+    ulong materialize_time = 0;
     ulong build_cycles = 0;
     ulong probe_cycles = 0;
     ulong materialize_cycles = 0;
