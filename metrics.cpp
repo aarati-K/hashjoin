@@ -9,7 +9,7 @@ unsigned long getTimeDiff(struct timespec start_time, struct timespec end_time) 
 
 unsigned long rdpmc_core_cycles() {
     unsigned long a, d, c;
-    c = 0;
+    c = (1<<30) + 1;
     __asm__ __volatile__("rdpmc" : "=a" (a), "=d" (d) : "c" (c));
     return ((unsigned long)a) | (((unsigned long)d) << 32);
 }
