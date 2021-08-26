@@ -47,9 +47,10 @@ inline void Hashjoin::insert(int key, void* ptr) {
 void* Hashjoin::exec(Table &fact, int factcol, Table &dim, int dimcol) {
     ColumnInfo f = fact.getColumnInfo(factcol);
     ColumnInfo d = dim.getColumnInfo(dimcol);
+    Metrics m;
     struct timespec start_time, end_time;
-    long build_time, probe_time;
-    int displacement = 0;
+    ulong cycles_start, cycles_end;
+    ulong m_cycles_start, m_cycles_end;
 
     // Assuming join is on integer attributes
     initHashmap(d.numtuples);
@@ -57,17 +58,21 @@ void* Hashjoin::exec(Table &fact, int factcol, Table &dim, int dimcol) {
 
     // Build hashmap
     clock_gettime(CLOCK_MONOTONIC, &start_time);
+    cycles_start = rdpmc_core_cycles();
     void *addr = d.startAddr;
     int incr = d.incr;
     for (int i=0; i<d.numtuples; i++) {
         insert(*((int*)addr), addr - d.offset);
         addr += incr;
     }
+    cycles_end = rdpmc_core_cycles();
     clock_gettime(CLOCK_MONOTONIC, &end_time);
-    build_time = getTimeDiff(start_time, end_time);
+    m.build_cycles = cycles_end - cycles_start;
+    m.build_time = getTimeDiff(start_time, end_time);
 
     // Probe hashmap
     clock_gettime(CLOCK_MONOTONIC, &start_time);
+    cycles_start = rdpmc_core_cycles();
     addr = f.startAddr;
     incr = f.incr;
     int key, hash_loc;
@@ -79,24 +84,33 @@ void* Hashjoin::exec(Table &fact, int factcol, Table &dim, int dimcol) {
         ptr = dict[hash_loc];
         while (ptr != NULL) {
             if (ptr->key == key) {
+                m_cycles_start = rdpmc_core_cycles();
                 // copy to output
                 memcpy(output_it, addr - f.offset, f.incr);
                 output_it += f.incr;
                 memcpy(output_it, ptr->ptr, d.incr);
                 output_it += d.incr;
+                m_cycles_end = rdpmc_core_cycles();
+                m.materialize_cycles += m_cycles_end - m_cycles_start;
                 break; // assuming pk-fk join
             }
-            displacement += 1;
+            m.displacement += 1;
             ptr = ptr->next;
         }
         addr += incr;
     }
+    cycles_end = rdpmc_core_cycles();
     clock_gettime(CLOCK_MONOTONIC, &end_time);
-    probe_time = getTimeDiff(start_time, end_time);
+    m.probe_cycles = cycles_end - cycles_start - m.materialize_cycles;
+    m.probe_and_materialize_time = getTimeDiff(start_time, end_time);
 
-    cout << "Build time: " << build_time << endl;
-    cout << "Probe time: " << probe_time << endl;
-    cout << "Total time: " << build_time + probe_time << endl;
-    cout << "Displacement: " << displacement << endl;
+    // Metrics
+    cout << "Build time: " << m.build_time << endl;
+    cout << "Probe time: " << m.probe_and_materialize_time << endl;
+    cout << "Total time: " << m.build_time + m.probe_and_materialize_time << endl;
+    cout << "Build cycles: " << m.build_cycles << endl;
+    cout << "Probe cycles: " << m.probe_cycles << endl;
+    cout << "Materialize cycles: " << m.materialize_cycles << endl;
+    cout << "Displacement: " << m.displacement << endl;
     return output;
 }

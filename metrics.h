@@ -8,8 +8,13 @@ using namespace std;
 #define _METRICS_H_
 
 typedef struct Metrics {
-    ulong clockCycles;
-    ulong l3Miss;
+    ulong build_time = 0;
+    ulong probe_and_materialize_time = 0;
+    ulong build_cycles = 0;
+    ulong probe_cycles = 0;
+    ulong materialize_cycles = 0;
+    ulong displacement = 0;
+    // ulong l3Miss_total; // will see later
 } Metrics;
 
 unsigned long getTimeDiff(struct timespec, struct  timespec);
