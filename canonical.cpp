@@ -27,6 +27,8 @@ int main() {
     Hashjoin hj;
     hj.exec(fact, 0, dim, 0);
 
+    cout << endl;
+
     Hashjoinvip hjv;
     hjv.exec(fact, 0, dim, 0);
     return 0;

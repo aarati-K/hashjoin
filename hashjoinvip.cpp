@@ -55,9 +55,10 @@ inline void Hashjoinvip::insert(int key, void* ptr) {
 void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
     ColumnInfo f = fact.getColumnInfo(factcol);
     ColumnInfo d = dim.getColumnInfo(dimcol);
+    Metrics m;
     struct timespec start_time, end_time;
-    long build_time, probe_time;
-    int displacement = 0;
+    ulong cycles_start, cycles_end;
+    ulong m_cycles_start, m_cycles_end;
 
     // Assuming join is on integer attributes
     initHashmap(d.numtuples);
@@ -65,17 +66,18 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
 
     // Build hashmap
     clock_gettime(CLOCK_MONOTONIC, &start_time);
+    cycles_start = rdpmc_core_cycles();
     void *addr = d.startAddr;
     int incr = d.incr;
     for (int i=0; i<d.numtuples; i++) {
         insert(*((int*)addr), addr - d.offset);
         addr += incr;
     }
-    clock_gettime(CLOCK_MONOTONIC, &end_time);
-    build_time = getTimeDiff(start_time, end_time);
+    cycles_end = rdpmc_core_cycles();
+    m.build_cycles = cycles_end - cycles_start;
 
     // Probe hashmap
-    clock_gettime(CLOCK_MONOTONIC, &start_time);
+    cycles_start = rdpmc_core_cycles();
     int n_learning = (d.numtuples < f.numtuples/80) ? d.numtuples : f.numtuples/60;
     addr = f.startAddr;
     incr = f.incr;
@@ -95,18 +97,21 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
         while (ptr != NULL) {
             if (ptr->key == key) {
                 // copy to output
+                m_cycles_start = rdpmc_core_cycles();
                 memcpy(output_it, addr - f.offset, f.incr);
                 output_it += f.incr;
                 memcpy(output_it, ptr->ptr, d.incr);
                 output_it += d.incr;
                 acc_ptr->count += 1;
+                m_cycles_end = rdpmc_core_cycles();
+                m.materialize_cycles += m_cycles_end - m_cycles_start;
                 break; // assuming pk-fk join
             }
             if (acc_ptr->count < min_count_acc_ptr->count) {
                 min_count_acc_ptr = acc_ptr;
                 min_count_ptr = ptr;
             }
-            displacement += 1;
+            m.displacement += 1;
             ptr = ptr->next;
             acc_ptr = acc_ptr->next;
         }
@@ -134,24 +139,38 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
         while (ptr != NULL) {
             if (ptr->key == key) {
                 // copy to output
+                m_cycles_start = rdpmc_core_cycles();
                 memcpy(output_it, addr - f.offset, f.incr);
                 output_it += f.incr;
                 memcpy(output_it, ptr->ptr, d.incr);
                 output_it += d.incr;
+                m_cycles_end = rdpmc_core_cycles();
+                m.materialize_cycles += m_cycles_end - m_cycles_start;
                 break; // assuming pk-fk join
             }
-            displacement += 1;
+            m.displacement += 1;
             ptr = ptr->next;
         }
         addr += incr;
     }
+    cycles_end = rdpmc_core_cycles();
     clock_gettime(CLOCK_MONOTONIC, &end_time);
-    probe_time = getTimeDiff(start_time, end_time);
-
-    cout << "Build time: " << build_time << endl;
-    cout << "Probe time: " << probe_time << endl;
-    cout << "Total time: " << build_time + probe_time << endl;
-    cout << "Displacement: " << displacement << endl;
+    m.probe_cycles = cycles_end - cycles_start - m.materialize_cycles;
+    
+    m.total_time = getTimeDiff(start_time, end_time);
+     long total_cycles = m.build_cycles + m.probe_cycles + m.materialize_cycles;
+    m.build_time = (float(m.build_cycles)/total_cycles)*m.total_time;
+    m.probe_time = (float(m.probe_cycles)/total_cycles)*m.total_time;
+    m.materialize_time = (float(m.materialize_cycles)/total_cycles)*m.total_time;
+    
+    cout << "Total time: " << m.total_time << endl;
+    cout << "Build time: " << m.build_time << endl;
+    cout << "Probe time: " << m.probe_time << endl;
+    cout << "Materialize time: " << m.materialize_time << endl;
+    cout << "Build cycles: " << m.build_cycles << endl;
+    cout << "Probe cycles: " << m.probe_cycles << endl;
+    cout << "Materialize cycles: " << m.materialize_cycles << endl;
+    cout << "Displacement: " << m.displacement << endl;
     // cout << "Num swaps: " << num_swaps << endl;
     return output;
 }
