@@ -5,6 +5,7 @@
 #include <sys/types.h>
 
 #include "table.h"
+#include "metrics.h"
 
 using namespace std;
 
@@ -30,7 +31,6 @@ public:
     void *exec(Table &fact, int factcol, Table &dim, int dimcol);
 protected:
     void build();
-    ulong getTimeDiff(struct timespec start_time, struct timespec end_time);
 private:
     void* output;
     KV **dict;

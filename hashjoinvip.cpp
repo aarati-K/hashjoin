@@ -1,11 +1,5 @@
 #include "hashjoinvip.h"
 
-// Measuring time elapsed in microseconds
-unsigned long Hashjoinvip::getTimeDiff(struct timespec start_time, struct timespec end_time) {
-    return (unsigned long)((end_time.tv_sec - start_time.tv_sec)*1000000 +
-        double(end_time.tv_nsec - start_time.tv_nsec)/1000);
-}
-
 Hashjoinvip::Hashjoinvip() {
     output = NULL;
     dict = NULL;

@@ -24,7 +24,7 @@ CXXFLAGS+=-O3
 
 all: canonical
 
-FILES = table.o hashjoin.o hashjoinvip.o
+FILES = table.o hashjoin.o hashjoinvip.o metrics.o
 
 
 clean:
