@@ -66,12 +66,9 @@ void* Hashjoin::exec(Table &fact, int factcol, Table &dim, int dimcol) {
         addr += incr;
     }
     cycles_end = rdpmc_core_cycles();
-    clock_gettime(CLOCK_MONOTONIC, &end_time);
     m.build_cycles = cycles_end - cycles_start;
-    m.build_time = getTimeDiff(start_time, end_time);
 
     // Probe hashmap
-    clock_gettime(CLOCK_MONOTONIC, &start_time);
     cycles_start = rdpmc_core_cycles();
     addr = f.startAddr;
     incr = f.incr;
@@ -102,18 +99,18 @@ void* Hashjoin::exec(Table &fact, int factcol, Table &dim, int dimcol) {
     cycles_end = rdpmc_core_cycles();
     clock_gettime(CLOCK_MONOTONIC, &end_time);
     m.probe_cycles = cycles_end - cycles_start - m.materialize_cycles;
-    m.probe_and_materialize_time = getTimeDiff(start_time, end_time);
 
-    float m_ratio = float(m.materialize_cycles)/float(m.materialize_cycles + m.probe_cycles);
-    m.materialize_time = m_ratio * m.probe_and_materialize_time;
-    m.probe_time = (1 - m_ratio) * m.probe_and_materialize_time;
+    m.total_time = getTimeDiff(start_time, end_time);
+    long total_cycles = m.build_cycles + m.probe_cycles + m.materialize_cycles;
+    m.build_time = (float(m.build_cycles)/total_cycles)*m.total_time;
+    m.probe_time = (float(m.probe_cycles)/total_cycles)*m.total_time;
+    m.materialize_time = (float(m.materialize_cycles)/total_cycles)*m.total_time;
 
     // Metrics
+    cout << "Total time: " << m.total_time << endl;
     cout << "Build time: " << m.build_time << endl;
     cout << "Probe time: " << m.probe_time << endl;
     cout << "Materialize time: " << m.materialize_time << endl;
-    cout << "Probe + Materialize time: " << m.probe_and_materialize_time << endl;
-    cout << "Total time: " << m.build_time + m.probe_and_materialize_time << endl;
     cout << "Build cycles: " << m.build_cycles << endl;
     cout << "Probe cycles: " << m.probe_cycles << endl;
     cout << "Materialize cycles: " << m.materialize_cycles << endl;

@@ -8,8 +8,8 @@ using namespace std;
 #define _METRICS_H_
 
 typedef struct Metrics {
+    ulong total_time = 0;
     ulong build_time = 0;
-    ulong probe_and_materialize_time = 0;
     ulong probe_time = 0;
     ulong materialize_time = 0;
     ulong build_cycles = 0;
