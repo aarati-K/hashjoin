@@ -106,7 +106,7 @@ void* Hashjoin::exec(Table &fact, int factcol, Table &dim, int dimcol) {
 
     // Metrics
     cout << "Build time: " << m.build_time << endl;
-    cout << "Probe time: " << m.probe_and_materialize_time << endl;
+    cout << "Probe + Materialize time: " << m.probe_and_materialize_time << endl;
     cout << "Total time: " << m.build_time + m.probe_and_materialize_time << endl;
     cout << "Build cycles: " << m.build_cycles << endl;
     cout << "Probe cycles: " << m.probe_cycles << endl;
