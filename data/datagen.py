@@ -1,11 +1,18 @@
 import random
+import sys
+
+if sys.argv > 1:
+    seed = int(sys.argv[1])
+    random.seed(seed)
 
 d = 1500000
 f = 10*d
 
 # Generate the dim column
 dim = range(1, d+1)
-random.shuffle(dim)
+
+for i in range(5):
+    random.shuffle(dim)
 
 prob = [0]*d
 zipf = 2
@@ -34,9 +41,9 @@ while i < f:
     i += 1
     j += 1
 
-for i in range(3):
-    random.shuffle(fact)
-    random.shuffle(dim)
+# for i in range(3):
+#     random.shuffle(fact)
+#     random.shuffle(dim)
 
 dimfile = open('dim.tbl', 'w')
 for i in dim:

@@ -205,7 +205,7 @@ void Table::shuffle() {
     for (int i=0; i<numtuples; i++) {
         randOrder[i] = i;
     }
-    for (int i=0; i<3; i++) {
+    for (int i=0; i<5; i++) {
         __random_shuffle(randOrder, numtuples);
     }
 
