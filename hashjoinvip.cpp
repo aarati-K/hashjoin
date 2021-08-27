@@ -60,7 +60,11 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
 
     // Assuming join is on integer attributes
     initHashmap(d.numtuples);
-    output = malloc(f.numtuples*(f.incr + d.incr)); // conservative
+    output = malloc(long(f.numtuples)*(f.incr + d.incr)); // conservative
+    if (!output) {
+        cout << "Failed initializing output buffer" << endl;
+        return output;
+    }
 
     // Build hashmap
     clock_gettime(CLOCK_MONOTONIC, &start_time);
