@@ -20,17 +20,22 @@ void Hashjoinvip::initHashmap(int n) {
         hashpower += 1;
     }
     cout << "Hashpower: " << hashpower << endl;
-    dict = (KV**)malloc(hashmap_size*sizeof(KV*));
+    dict = (DictEntry*)malloc(hashmap_size*sizeof(DictEntry));
     entries = (KV*)malloc(max_entries*sizeof(KV));
-    acc_dict = (AccessCount**)malloc(hashmap_size*sizeof(AccessCount*));
-    acc_entries = (AccessCount*)malloc(max_entries*sizeof(AccessCount));
+    acc_dict = (AccessCount**)malloc((hashmap_size+1)*sizeof(AccessCount*));
+    acc_entries = (AccessCount*)malloc((max_entries+1)*sizeof(AccessCount));
     if (!dict || !entries || !acc_dict || !acc_entries) {
         cout << "Failed initializing hashmap memory" << endl;
     }
-    memset(dict, 0, hashmap_size*sizeof(KV*));
+    memset(dict, 0, hashmap_size*sizeof(DictEntry));
     memset(entries, 0, max_entries*sizeof(KV));
-    memset(acc_dict, 0, hashmap_size*sizeof(AccessCount*));
-    memset(acc_entries, 0, max_entries*sizeof(AccessCount));
+
+    // The first access counting entry is used to avoid branches
+    memset(acc_dict, 0, (hashmap_size+1)*sizeof(AccessCount*));
+    memset(acc_entries, 0, (max_entries+1)*sizeof(AccessCount));
+
+    // Point the first entry in acc_dict to the dummy access counting entry
+    acc_dict[0] = &acc_entries[0];
 }
 
 inline void Hashjoinvip::insert(int key, void* ptr) {
@@ -45,10 +50,11 @@ inline void Hashjoinvip::insert(int key, void* ptr) {
     int hash_loc = (key*prime) >> (32 - hashpower);
     entries[entriesOffset].key = key;
     entries[entriesOffset].ptr = ptr;
-    entries[entriesOffset].next = dict[hash_loc];
-    acc_entries[entriesOffset].next = acc_dict[hash_loc];
-    dict[hash_loc] = &entries[entriesOffset];
-    acc_dict[hash_loc] = &acc_entries[entriesOffset];
+    entries[entriesOffset].next = dict[hash_loc].head;
+    acc_entries[entriesOffset+1].next = acc_dict[hash_loc+1];
+    dict[hash_loc].head = &entries[entriesOffset];
+    dict[hash_loc].budget += 1;
+    acc_dict[hash_loc+1] = &acc_entries[entriesOffset+1];
     entriesOffset += 1;
 }
 
@@ -79,22 +85,23 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
 
     // Probe hashmap
     clock_gettime(CLOCK_MONOTONIC, &start_time);
-    // int n_learning = (d.numtuples < f.numtuples/80) ? d.numtuples : f.numtuples/60;
-    int n_learning = f.numtuples;
+    int n_learning = (d.numtuples < f.numtuples/80) ? d.numtuples : f.numtuples/60;
     addr = f.startAddr;
     incr = f.incr;
     int key, hash_loc;
     KV *ptr, *min_count_ptr;
+    uint8_t budget;
     AccessCount *acc_ptr, *min_count_acc_ptr;
     void* output_it = output;
     int i = 0;
     int num_swaps = 0;
-    for (; i<n_learning; i++) {
+    for (; i<f.numtuples; i++) {
         key = *((int*)addr);
         hash_loc = (key*prime) >> (32 - hashpower);
-        ptr = dict[hash_loc];
+        ptr = dict[hash_loc].head;
+        budget = dict[hash_loc].budget;
         min_count_ptr = ptr;
-        acc_ptr = acc_dict[hash_loc];
+        acc_ptr = acc_dict[hash_loc+1];
         min_count_acc_ptr = acc_ptr;
         while (ptr != NULL) {
             if (ptr->key == key) {
@@ -131,24 +138,6 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
         }
         addr += incr;
     }
-    for (; i<f.numtuples; i++) {
-        key = *((int*)addr);
-        hash_loc = (key*prime) >> (32 - hashpower);
-        ptr = dict[hash_loc];
-        while (ptr != NULL) {
-            if (ptr->key == key) {
-                // copy to output
-                memcpy(output_it, addr - f.offset, f.incr);
-                output_it += f.incr;
-                memcpy(output_it, ptr->ptr, d.incr);
-                output_it += d.incr;
-                break; // assuming pk-fk join
-            }
-            m.displacement += 1;
-            ptr = ptr->next;
-        }
-        addr += incr;
-    }
     clock_gettime(CLOCK_MONOTONIC, &end_time);
     m.probe_and_materialize_time = getTimeDiff(start_time, end_time);
 
@@ -159,43 +148,5 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
     cout << "Probe + Materialize time: " << m.probe_and_materialize_time << endl;
     cout << "Displacement: " << m.displacement << endl;
     cout << "Num swaps: " << num_swaps << endl;
-
-    cout << endl;
-    cout << "Probing again" << endl;
-    // Probe hashmap
-    m.displacement = 0;
-    clock_gettime(CLOCK_MONOTONIC, &start_time);
-    addr = f.startAddr;
-    incr = f.incr;
-    // int key, hash_loc;
-    // KV* ptr;
-    output_it = output;
-    for (int i=0; i<f.numtuples; i++) {
-        key = *((int*)addr);
-        hash_loc = (key*prime) >> (32 - hashpower);
-        ptr = dict[hash_loc];
-        while (ptr != NULL) {
-            if (ptr->key == key) {
-                // copy to output
-                memcpy(output_it, addr - f.offset, f.incr);
-                output_it += f.incr;
-                memcpy(output_it, ptr->ptr, d.incr);
-                output_it += d.incr;
-                break; // assuming pk-fk join
-            }
-            m.displacement += 1;
-            ptr = ptr->next;
-        }
-        addr += incr;
-    }
-    clock_gettime(CLOCK_MONOTONIC, &end_time);
-    m.probe_and_materialize_time = getTimeDiff(start_time, end_time);
-    m.total_time = m.build_time + m.probe_and_materialize_time;
-
-    // Metrics
-    cout << "Total time: " << m.total_time << endl;
-    cout << "Build time: " << m.build_time << endl;
-    cout << "Probe + Materialize time: " << m.probe_and_materialize_time << endl;
-    cout << "Displacement: " << m.displacement << endl;
     return output;
 }
