@@ -36,6 +36,7 @@ void Hashjoinvip::initHashmap(int n) {
 
     // Point the first entry in acc_dict to the dummy access counting entry
     acc_dict[0] = &acc_entries[0];
+    acc_entries[0].next = &acc_entries[0];
 }
 
 inline void Hashjoinvip::insert(int key, void* ptr) {
@@ -99,9 +100,9 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
         key = *((int*)addr);
         hash_loc = (key*prime) >> (32 - hashpower);
         ptr = dict[hash_loc].head;
-        budget = dict[hash_loc].budget;
+        budget = dict[hash_loc].budget && !!n_learning;
         min_count_ptr = ptr;
-        acc_ptr = acc_dict[hash_loc+1];
+        acc_ptr = acc_dict[(hash_loc+1)*(!!budget)];
         min_count_acc_ptr = acc_ptr;
         while (ptr != NULL) {
             if (ptr->key == key) {
@@ -111,9 +112,11 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
                 memcpy(output_it, ptr->ptr, d.incr);
                 output_it += d.incr;
                 acc_ptr->count += 1;
+                dict[hash_loc].budget -= !!budget;
+                n_learning -= !!budget;
                 break; // assuming pk-fk join
             }
-            if (acc_ptr->count < min_count_acc_ptr->count) {
+            if (budget && acc_ptr->count < min_count_acc_ptr->count) {
                 min_count_acc_ptr = acc_ptr;
                 min_count_ptr = ptr;
             }
