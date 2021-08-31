@@ -79,7 +79,8 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
 
     // Probe hashmap
     clock_gettime(CLOCK_MONOTONIC, &start_time);
-    int n_learning = (d.numtuples < f.numtuples/80) ? d.numtuples : f.numtuples/60;
+    // int n_learning = (d.numtuples < f.numtuples/80) ? d.numtuples : f.numtuples/60;
+    int n_learning = f.numtuples;
     addr = f.startAddr;
     incr = f.incr;
     int key, hash_loc;
@@ -87,7 +88,7 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
     AccessCount *acc_ptr, *min_count_acc_ptr;
     void* output_it = output;
     int i = 0;
-    // int num_swaps = 0;
+    int num_swaps = 0;
     for (; i<n_learning; i++) {
         key = *((int*)addr);
         hash_loc = (key*prime) >> (32 - hashpower);
@@ -115,7 +116,7 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
         }
         // Swap
         if (acc_ptr->count > min_count_acc_ptr->count) {
-            // num_swaps += 1;
+            num_swaps += 1;
 
             uint8_t count = acc_ptr->count;
             acc_ptr->count = min_count_acc_ptr->count;
@@ -157,6 +158,44 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
     cout << "Build time: " << m.build_time << endl;
     cout << "Probe + Materialize time: " << m.probe_and_materialize_time << endl;
     cout << "Displacement: " << m.displacement << endl;
-    // cout << "Num swaps: " << num_swaps << endl;
+    cout << "Num swaps: " << num_swaps << endl;
+
+    cout << endl;
+    cout << "Probing again" << endl;
+    // Probe hashmap
+    m.displacement = 0;
+    clock_gettime(CLOCK_MONOTONIC, &start_time);
+    addr = f.startAddr;
+    incr = f.incr;
+    // int key, hash_loc;
+    // KV* ptr;
+    output_it = output;
+    for (int i=0; i<f.numtuples; i++) {
+        key = *((int*)addr);
+        hash_loc = (key*prime) >> (32 - hashpower);
+        ptr = dict[hash_loc];
+        while (ptr != NULL) {
+            if (ptr->key == key) {
+                // copy to output
+                memcpy(output_it, addr - f.offset, f.incr);
+                output_it += f.incr;
+                memcpy(output_it, ptr->ptr, d.incr);
+                output_it += d.incr;
+                break; // assuming pk-fk join
+            }
+            m.displacement += 1;
+            ptr = ptr->next;
+        }
+        addr += incr;
+    }
+    clock_gettime(CLOCK_MONOTONIC, &end_time);
+    m.probe_and_materialize_time = getTimeDiff(start_time, end_time);
+    m.total_time = m.build_time + m.probe_and_materialize_time;
+
+    // Metrics
+    cout << "Total time: " << m.total_time << endl;
+    cout << "Build time: " << m.build_time << endl;
+    cout << "Probe + Materialize time: " << m.probe_and_materialize_time << endl;
+    cout << "Displacement: " << m.displacement << endl;
     return output;
 }

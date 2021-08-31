@@ -43,11 +43,13 @@ int main(int argc, char** argv) {
     dim.addCol(CT_STRING, 118); // comment
     
     // Load the tables
-    fact.loadFromFile(string("SkewedDataGenerator/order.tbl"), '|');
-    dim.loadFromFile(string("SkewedDataGenerator/customer.tbl"), '|');
+    fact.loadFromFile(string("SkewedDataGenerator/zipf2/order.tbl"), '|');
+    dim.loadFromFile(string("SkewedDataGenerator/zipf2/customer.tbl"), '|');
 
-    fact.shuffle();
-    dim.shuffle();
+    for (int i=0; i<3; i++) {
+    	fact.shuffle();
+    	dim.shuffle();
+    }
     
     Hashjoin hj;
     hj.exec(fact, 1, dim, 0);

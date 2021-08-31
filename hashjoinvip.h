@@ -24,7 +24,7 @@ typedef struct KV {
 #define _HASHJOINVIP_H_
 
 typedef struct AccessCount {
-    uint8_t count = 0;
+    uint count = 0;
     struct AccessCount *next = NULL;
 } AccessCount;
 
