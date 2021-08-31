@@ -125,7 +125,7 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
             acc_ptr = acc_ptr->next;
         }
         // Swap
-        if (acc_ptr->count > min_count_acc_ptr->count) {
+        if (budget && acc_ptr->count > min_count_acc_ptr->count) {
             num_swaps += 1;
 
             uint8_t count = acc_ptr->count;
