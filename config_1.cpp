@@ -38,8 +38,8 @@ int main(int argc, char** argv) {
     dim.addCol(CT_STRING, 102); // comment
 
     // Load the tables
-    fact.loadFromFile(string("SkewedDataGenerator/partsupp.tbl"), '|');
-    dim.loadFromFile(string("SkewedDataGenerator/supplier.tbl"), '|');
+    fact.loadFromFile(string("SkewedDataGenerator/zipf2/partsupp.tbl"), '|');
+    dim.loadFromFile(string("SkewedDataGenerator/zipf2/supplier.tbl"), '|');
 
     fact.shuffle();
     dim.shuffle();

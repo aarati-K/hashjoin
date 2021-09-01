@@ -79,7 +79,7 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
 
     // Probe hashmap
     clock_gettime(CLOCK_MONOTONIC, &start_time);
-    int n_learning = (d.numtuples < f.numtuples/80) ? d.numtuples : f.numtuples/60;
+    int n_learning = (d.numtuples < f.numtuples/60) ? d.numtuples : f.numtuples/60;
     addr = f.startAddr;
     incr = f.incr;
     int key, hash_loc;
