@@ -32,7 +32,7 @@ typedef struct DictEntry {
 
 typedef struct AccessCount {
     uint8_t count = 0;
-    struct AccessCount *next = NULL;
+    int next = 0;   // index into the acc_entries array
 } AccessCount;
 
 class Hashjoinvip {
@@ -47,7 +47,7 @@ private:
     void* output;
     DictEntry *dict;
     KV *entries;
-    AccessCount **acc_dict;
+    int* acc_dict;
     AccessCount *acc_entries;
     int entriesOffset;
     int max_entries;

@@ -22,7 +22,7 @@ void Hashjoinvip::initHashmap(int n) {
     cout << "Hashpower: " << hashpower << endl;
     dict = (DictEntry*)malloc(hashmap_size*sizeof(DictEntry));
     entries = (KV*)malloc(max_entries*sizeof(KV));
-    acc_dict = (AccessCount**)malloc((hashmap_size+1)*sizeof(AccessCount*));
+    acc_dict = (int*)malloc((hashmap_size+1)*sizeof(int));
     acc_entries = (AccessCount*)malloc((max_entries+1)*sizeof(AccessCount));
     if (!dict || !entries || !acc_dict || !acc_entries) {
         cout << "Failed initializing hashmap memory" << endl;
@@ -32,8 +32,8 @@ void Hashjoinvip::initHashmap(int n) {
     memset(acc_dict, 0, hashmap_size*sizeof(AccessCount*));
     memset(acc_entries, 0, max_entries*sizeof(AccessCount));
 
-    acc_dict[0] = &acc_entries[0];
-    acc_entries[0].next = &acc_entries[0];
+    acc_dict[0] = 0;
+    acc_entries[0].next = 0;
 }
 
 inline void Hashjoinvip::insert(int key, void* ptr) {
@@ -52,7 +52,7 @@ inline void Hashjoinvip::insert(int key, void* ptr) {
     acc_entries[entriesOffset+1].next = acc_dict[hash_loc+1];
     dict[hash_loc].head = &entries[entriesOffset];
     dict[hash_loc].budget += 1;
-    acc_dict[hash_loc+1] = &acc_entries[entriesOffset+1];
+    acc_dict[hash_loc+1] = entriesOffset+1;
     entriesOffset += 1;
 }
 
@@ -86,7 +86,7 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
     int key, hash_loc;
     uint8_t budget;
     KV *ptr, *min_count_ptr;
-    AccessCount *acc_ptr, *min_count_acc_ptr;
+    int acc_offset, min_count_acc_offset;
     void* output_it = output;
     int i = 0;
     // int num_swaps = 0;
@@ -96,8 +96,8 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
         ptr = dict[hash_loc].head;
         budget = !!(dict[hash_loc].budget);
         min_count_ptr = ptr;
-        acc_ptr = acc_dict[(hash_loc+1)*budget];
-        min_count_acc_ptr = acc_ptr;
+        acc_offset = acc_dict[(hash_loc+1)*budget];
+        min_count_acc_offset = acc_offset;
         while (ptr != NULL) {
             if (ptr->key == key) {
                 // copy to output
@@ -105,24 +105,24 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
                 output_it += f.incr;
                 memcpy(output_it, ptr->ptr, d.incr);
                 output_it += d.incr;
-                acc_ptr->count += 1;
+                acc_entries[acc_offset].count += 1;
                 break; // assuming pk-fk join
             }
-            if (budget && acc_ptr->count < min_count_acc_ptr->count) {
-                min_count_acc_ptr = acc_ptr;
+            if (budget && acc_entries[acc_offset].count < acc_entries[min_count_acc_offset].count) {
+                min_count_acc_offset = acc_offset;
                 min_count_ptr = ptr;
             }
             m.displacement += 1;
             ptr = ptr->next;
-            acc_ptr = acc_ptr->next;
+            acc_offset = acc_entries[acc_offset].next;
         }
         // Swap
-        if (budget && acc_ptr->count > min_count_acc_ptr->count) {
+        if (budget && acc_entries[acc_offset].count > acc_entries[min_count_acc_offset].count) {
             // num_swaps += 1;
 
-            uint8_t count = acc_ptr->count;
-            acc_ptr->count = min_count_acc_ptr->count;
-            min_count_acc_ptr->count = count;
+            uint8_t count = acc_entries[acc_offset].count;
+            acc_entries[acc_offset].count = acc_entries[min_count_acc_offset].count;
+            acc_entries[min_count_acc_offset].count = count;
 
             ptr->key = min_count_ptr->key;
             min_count_ptr->key = key;
