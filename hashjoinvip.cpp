@@ -85,6 +85,7 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
     incr = f.incr;
     int key, hash_loc;
     uint8_t budget;
+    uint8_t flag;
     KV *ptr, *min_count_ptr;
     int acc_offset, min_count_acc_offset;
     void* output_it = output;
@@ -108,10 +109,13 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
                 acc_entries[acc_offset].count += 1;
                 break; // assuming pk-fk join
             }
-            if (budget && acc_entries[acc_offset].count < acc_entries[min_count_acc_offset].count) {
-                min_count_acc_offset = acc_offset;
-                min_count_ptr = ptr;
-            }
+            // if (budget && acc_entries[acc_offset].count < acc_entries[min_count_acc_offset].count) {
+            //     min_count_acc_offset = acc_offset;
+            //     min_count_ptr = ptr;
+            // }
+            flag = (acc_entries[acc_offset].count - acc_entries[min_count_acc_offset].count) >> 7;
+            min_count_acc_offset = min_count_acc_offset + flag*(acc_offset - min_count_acc_offset);
+            min_count_ptr = min_count_ptr + flag*(ptr - min_count_ptr);
             m.displacement += 1;
             ptr = ptr->next;
             acc_offset = acc_entries[acc_offset].next;
