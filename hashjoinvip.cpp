@@ -22,8 +22,8 @@ void Hashjoinvip::initHashmap(int n) {
     cout << "Hashpower: " << hashpower << endl;
     dict = (DictEntry*)malloc(hashmap_size*sizeof(DictEntry));
     entries = (KV*)malloc(max_entries*sizeof(KV));
-    acc_dict = (AccessCount**)malloc(hashmap_size*sizeof(AccessCount*));
-    acc_entries = (AccessCount*)malloc(max_entries*sizeof(AccessCount));
+    acc_dict = (AccessCount**)malloc((hashmap_size+1)*sizeof(AccessCount*));
+    acc_entries = (AccessCount*)malloc((max_entries+1)*sizeof(AccessCount));
     if (!dict || !entries || !acc_dict || !acc_entries) {
         cout << "Failed initializing hashmap memory" << endl;
     }
@@ -31,6 +31,9 @@ void Hashjoinvip::initHashmap(int n) {
     memset(entries, 0, max_entries*sizeof(KV));
     memset(acc_dict, 0, hashmap_size*sizeof(AccessCount*));
     memset(acc_entries, 0, max_entries*sizeof(AccessCount));
+
+    acc_dict[0] = &acc_entries[0];
+    acc_entries[0].next = &acc_entries[0];
 }
 
 inline void Hashjoinvip::insert(int key, void* ptr) {
@@ -46,10 +49,10 @@ inline void Hashjoinvip::insert(int key, void* ptr) {
     entries[entriesOffset].key = key;
     entries[entriesOffset].ptr = ptr;
     entries[entriesOffset].next = dict[hash_loc].head;
-    acc_entries[entriesOffset].next = acc_dict[hash_loc];
+    acc_entries[entriesOffset+1].next = acc_dict[hash_loc+1];
     dict[hash_loc].head = &entries[entriesOffset];
     dict[hash_loc].budget += 1;
-    acc_dict[hash_loc] = &acc_entries[entriesOffset];
+    acc_dict[hash_loc+1] = &acc_entries[entriesOffset+1];
     entriesOffset += 1;
 }
 
@@ -93,7 +96,7 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
         ptr = dict[hash_loc].head;
         budget = dict[hash_loc].budget;
         min_count_ptr = ptr;
-        acc_ptr = acc_dict[hash_loc];
+        acc_ptr = acc_dict[(hash_loc+1)*(!!budget)];
         min_count_acc_ptr = acc_ptr;
         while (ptr != NULL) {
             if (ptr->key == key) {
