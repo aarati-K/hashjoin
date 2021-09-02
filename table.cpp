@@ -157,7 +157,7 @@ void Table::loadFromFile(string fname, char sep) {
                 default:
                     break;
             }
-            buf_it += *col_size_it;
+            buf_it = (char*)buf_it + *col_size_it;
             schema_it++;
             col_size_it++;
         }
@@ -177,7 +177,7 @@ ColumnInfo Table::getColumnInfo(int col) {
         return c;
     }
     c.ct = cols.at(col);
-    c.startAddr = buf + coloffset.at(col);
+    c.startAddr = (char*)buf + coloffset.at(col);
     c.offset = coloffset.at(col);
     c.incr = tuplesize;
     c.numtuples = numtuples;
@@ -210,7 +210,7 @@ void Table::shuffle() {
     }
 
     for (int i=0; i<numtuples; i++) {
-        memcpy(bufNew + randOrder[i]*tuplesize, buf + i*tuplesize, tuplesize);
+        memcpy((char*)bufNew + randOrder[i]*tuplesize, (char*)buf + i*tuplesize, tuplesize);
     }
     free(buf);
     buf = bufNew;

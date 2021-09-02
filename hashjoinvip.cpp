@@ -74,8 +74,8 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
     void *addr = d.startAddr;
     int incr = d.incr;
     for (int i=0; i<d.numtuples; i++) {
-        insert(*((int*)addr), addr - d.offset);
-        addr += incr;
+        insert(*((int*)addr), (char*)addr - d.offset);
+        addr = (char*)addr + incr;
     }
     clock_gettime(CLOCK_MONOTONIC, &end_time);
     m.build_time = getTimeDiff(start_time, end_time);
@@ -105,10 +105,10 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
         while (ptr != NULL) {
             if (ptr->key == key) {
                 // copy to output
-                memcpy(output_it, addr - f.offset, f.incr);
-                output_it += f.incr;
+                memcpy(output_it, (char*)addr - f.offset, f.incr);
+                output_it = (char*)output_it + f.incr;
                 memcpy(output_it, ptr->ptr, d.incr);
-                output_it += d.incr;
+                output_it = (char*)output_it + d.incr;
                 acc_entries[acc_offset].count += 1;
                 break; // assuming pk-fk join
             }
@@ -138,7 +138,7 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
             ptr->ptr = min_count_ptr->ptr;
             min_count_ptr->ptr = payload;
         }
-        addr += incr;
+        addr = (char*)addr + incr;
     }
     clock_gettime(CLOCK_MONOTONIC, &end_time);
     m.learn_time = getTimeDiff(start_time, end_time);
@@ -151,16 +151,16 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
         while (ptr != NULL) {
             if (ptr->key == key) {
                 // copy to output
-                memcpy(output_it, addr - f.offset, f.incr);
-                output_it += f.incr;
+                memcpy(output_it, (char*)addr - f.offset, f.incr);
+                output_it = (char*)output_it + f.incr;
                 memcpy(output_it, ptr->ptr, d.incr);
-                output_it += d.incr;
+                output_it = (char*)output_it + d.incr;
                 break; // assuming pk-fk join
             }
             m.displacement += 1;
             ptr = ptr->next;
         }
-        addr += incr;
+        addr = (char*)addr + incr;
     }
     clock_gettime(CLOCK_MONOTONIC, &end_time);
     m.probe_and_materialize_time = getTimeDiff(start_time, end_time);
@@ -179,7 +179,7 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
     // stack<int> s;
     // for (int i=0; i<hashmap_size; i++) {
     //     // Iterate over buckets
-    //     ptr = dict[i].head;
+    //     ptr = dict[i];
     //     while (ptr != NULL) {
     //         s.push(ptr->key);
     //         ptr = ptr->next;
