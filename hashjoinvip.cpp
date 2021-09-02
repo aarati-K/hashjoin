@@ -108,7 +108,6 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
                 acc_ptr->count += 1;
                 break; // assuming pk-fk join
             }
-            Is it possible to write this if statement without using if?
             if (budget && acc_ptr->count < min_count_acc_ptr->count) {
                 min_count_acc_ptr = acc_ptr;
                 min_count_ptr = ptr;
