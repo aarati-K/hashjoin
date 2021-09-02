@@ -140,6 +140,10 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
         }
         addr += incr;
     }
+    clock_gettime(CLOCK_MONOTONIC, &end_time);
+    m.learn_time = getTimeDiff(start_time, end_time);
+
+    clock_gettime(CLOCK_MONOTONIC, &start_time);
     for (; i<f.numtuples; i++) {
         key = *((int*)addr);
         hash_loc = (key*prime) >> (32 - hashpower);
@@ -161,10 +165,11 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
     clock_gettime(CLOCK_MONOTONIC, &end_time);
     m.probe_and_materialize_time = getTimeDiff(start_time, end_time);
 
-    m.total_time = m.build_time + m.probe_and_materialize_time;
+    m.total_time = m.build_time + m.learn_time + m.probe_and_materialize_time;
     
     cout << "Total time: " << m.total_time << endl;
     cout << "Build time: " << m.build_time << endl;
+    cout << "Learn time: " << m.learn_time << endl;
     cout << "Probe + Materialize time: " << m.probe_and_materialize_time << endl;
     cout << "Displacement: " << m.displacement << endl;
     // cout << "Num swaps: " << num_swaps << endl;
