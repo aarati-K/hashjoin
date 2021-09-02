@@ -94,9 +94,9 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
         key = *((int*)addr);
         hash_loc = (key*prime) >> (32 - hashpower);
         ptr = dict[hash_loc].head;
-        budget = dict[hash_loc].budget;
+        budget = !!(dict[hash_loc].budget);
         min_count_ptr = ptr;
-        acc_ptr = acc_dict[(hash_loc+1)*(!!budget)];
+        acc_ptr = acc_dict[(hash_loc+1)*budget];
         min_count_acc_ptr = acc_ptr;
         while (ptr != NULL) {
             if (ptr->key == key) {
@@ -108,6 +108,7 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
                 acc_ptr->count += 1;
                 break; // assuming pk-fk join
             }
+            Is it possible to write this if statement without using if?
             if (budget && acc_ptr->count < min_count_acc_ptr->count) {
                 min_count_acc_ptr = acc_ptr;
                 min_count_ptr = ptr;
@@ -132,7 +133,7 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
             min_count_ptr->ptr = payload;
         }
         addr += incr;
-        dict[hash_loc].budget -= !!budget;
+        dict[hash_loc].budget -= budget;
     }
     // for (; i<f.numtuples; i++) {
     //     key = *((int*)addr);
