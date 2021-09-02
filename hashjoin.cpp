@@ -60,7 +60,7 @@ void* Hashjoin::exec(Table &fact, int factcol, Table &dim, int dimcol) {
     int incr = d.incr;
     for (int i=0; i<d.numtuples; i++) {
         insert(*((int*)addr), (char*)addr - d.offset);
-        addr += incr;
+        addr = (char*)addr + incr;
     }
     clock_gettime(CLOCK_MONOTONIC, &end_time);
     m.build_time = getTimeDiff(start_time, end_time);
