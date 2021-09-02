@@ -80,7 +80,6 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
     // Probe hashmap
     clock_gettime(CLOCK_MONOTONIC, &start_time);
     int n_learning = (d.numtuples < f.numtuples/60) ? d.numtuples : f.numtuples/60;
-    n_learning = f.numtuples;
     addr = f.startAddr;
     incr = f.incr;
     int key, hash_loc;
@@ -109,13 +108,13 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
                 acc_entries[acc_offset].count += 1;
                 break; // assuming pk-fk join
             }
-            // if (budget && acc_entries[acc_offset].count < acc_entries[min_count_acc_offset].count) {
-            //     min_count_acc_offset = acc_offset;
-            //     min_count_ptr = ptr;
-            // }
-            flag = 1 & (acc_entries[acc_offset].count - acc_entries[min_count_acc_offset].count) >> 7;
-            min_count_acc_offset = min_count_acc_offset + flag*(acc_offset - min_count_acc_offset);
-            min_count_ptr = min_count_ptr + flag*(ptr - min_count_ptr);
+            if (budget && acc_entries[acc_offset].count < acc_entries[min_count_acc_offset].count) {
+                min_count_acc_offset = acc_offset;
+                min_count_ptr = ptr;
+            }
+            // flag = 1 & (acc_entries[acc_offset].count - acc_entries[min_count_acc_offset].count) >> 7;
+            // min_count_acc_offset = min_count_acc_offset + flag*(acc_offset - min_count_acc_offset);
+            // min_count_ptr = min_count_ptr + flag*(ptr - min_count_ptr);
             m.displacement += 1;
             ptr = ptr->next;
             acc_offset = acc_entries[acc_offset].next;
@@ -138,24 +137,24 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
         addr += incr;
         dict[hash_loc].budget -= budget;
     }
-    // for (; i<f.numtuples; i++) {
-    //     key = *((int*)addr);
-    //     hash_loc = (key*prime) >> (32 - hashpower);
-    //     ptr = dict[hash_loc].head;
-    //     while (ptr != NULL) {
-    //         if (ptr->key == key) {
-    //             // copy to output
-    //             memcpy(output_it, addr - f.offset, f.incr);
-    //             output_it += f.incr;
-    //             memcpy(output_it, ptr->ptr, d.incr);
-    //             output_it += d.incr;
-    //             break; // assuming pk-fk join
-    //         }
-    //         m.displacement += 1;
-    //         ptr = ptr->next;
-    //     }
-    //     addr += incr;
-    // }
+    for (; i<f.numtuples; i++) {
+        key = *((int*)addr);
+        hash_loc = (key*prime) >> (32 - hashpower);
+        ptr = dict[hash_loc].head;
+        while (ptr != NULL) {
+            if (ptr->key == key) {
+                // copy to output
+                memcpy(output_it, addr - f.offset, f.incr);
+                output_it += f.incr;
+                memcpy(output_it, ptr->ptr, d.incr);
+                output_it += d.incr;
+                break; // assuming pk-fk join
+            }
+            m.displacement += 1;
+            ptr = ptr->next;
+        }
+        addr += incr;
+    }
     clock_gettime(CLOCK_MONOTONIC, &end_time);
     m.probe_and_materialize_time = getTimeDiff(start_time, end_time);
 
