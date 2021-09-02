@@ -23,6 +23,11 @@ typedef struct KV {
 #ifndef _HASHJOINVIP_H_
 #define _HASHJOINVIP_H_
 
+typedef struct DictEntry {
+    KV* head = NULL;
+    uint8_t budget = 0;
+} DictEntry;
+
 typedef struct AccessCount {
     uint8_t count = 0;
     struct AccessCount *next = NULL;
@@ -38,7 +43,7 @@ protected:
     void build();
 private:
     void* output;
-    KV **dict;
+    DictEntry *dict;
     KV *entries;
     AccessCount **acc_dict;
     AccessCount *acc_entries;

@@ -20,14 +20,14 @@ void Hashjoinvip::initHashmap(int n) {
         hashpower += 1;
     }
     cout << "Hashpower: " << hashpower << endl;
-    dict = (KV**)malloc(hashmap_size*sizeof(KV*));
+    dict = (DictEntry*)malloc(hashmap_size*sizeof(DictEntry));
     entries = (KV*)malloc(max_entries*sizeof(KV));
     acc_dict = (AccessCount**)malloc(hashmap_size*sizeof(AccessCount*));
     acc_entries = (AccessCount*)malloc(max_entries*sizeof(AccessCount));
     if (!dict || !entries || !acc_dict || !acc_entries) {
         cout << "Failed initializing hashmap memory" << endl;
     }
-    memset(dict, 0, hashmap_size*sizeof(KV*));
+    memset(dict, 0, hashmap_size*sizeof(DictEntry));
     memset(entries, 0, max_entries*sizeof(KV));
     memset(acc_dict, 0, hashmap_size*sizeof(AccessCount*));
     memset(acc_entries, 0, max_entries*sizeof(AccessCount));
@@ -45,9 +45,9 @@ inline void Hashjoinvip::insert(int key, void* ptr) {
     int hash_loc = (key*prime) >> (32 - hashpower);
     entries[entriesOffset].key = key;
     entries[entriesOffset].ptr = ptr;
-    entries[entriesOffset].next = dict[hash_loc];
+    entries[entriesOffset].next = dict[hash_loc].head;
     acc_entries[entriesOffset].next = acc_dict[hash_loc];
-    dict[hash_loc] = &entries[entriesOffset];
+    dict[hash_loc].head = &entries[entriesOffset];
     acc_dict[hash_loc] = &acc_entries[entriesOffset];
     entriesOffset += 1;
 }
@@ -87,7 +87,7 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
     for (; i<n_learning; i++) {
         key = *((int*)addr);
         hash_loc = (key*prime) >> (32 - hashpower);
-        ptr = dict[hash_loc];
+        ptr = dict[hash_loc].head;
         min_count_ptr = ptr;
         acc_ptr = acc_dict[hash_loc];
         min_count_acc_ptr = acc_ptr;
@@ -129,7 +129,7 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
     for (; i<f.numtuples; i++) {
         key = *((int*)addr);
         hash_loc = (key*prime) >> (32 - hashpower);
-        ptr = dict[hash_loc];
+        ptr = dict[hash_loc].head;
         while (ptr != NULL) {
             if (ptr->key == key) {
                 // copy to output
