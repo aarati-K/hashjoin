@@ -25,11 +25,6 @@ typedef struct KV {
 #ifndef _HASHJOINVIP_H_
 #define _HASHJOINVIP_H_
 
-typedef struct DictEntry {
-    KV* head = NULL;
-    uint8_t budget = 0;
-} DictEntry;
-
 typedef struct AccessCount {
     uint8_t count = 0;
     int next = 0;   // index into the acc_entries array
@@ -45,10 +40,11 @@ protected:
     void build();
 private:
     void* output;
-    DictEntry *dict;
+    KV **dict;
     KV *entries;
     int* acc_dict;
     AccessCount *acc_entries;
+    uint8_t *budget_per_bucket;
     int entriesOffset;
     int max_entries;
     int hashmap_size;

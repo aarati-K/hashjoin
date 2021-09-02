@@ -6,6 +6,7 @@ Hashjoinvip::Hashjoinvip() {
     entries = NULL;
     acc_dict = NULL;
     acc_entries = NULL;
+    budget_per_bucket = NULL;
     entriesOffset = 0;
     hashmap_size = 0;
     max_entries = 0;
@@ -20,17 +21,19 @@ void Hashjoinvip::initHashmap(int n) {
         hashpower += 1;
     }
     cout << "Hashpower: " << hashpower << endl;
-    dict = (DictEntry*)malloc(hashmap_size*sizeof(DictEntry));
+    dict = (KV**)malloc(hashmap_size*sizeof(KV*));
     entries = (KV*)malloc(max_entries*sizeof(KV));
     acc_dict = (int*)malloc((hashmap_size+1)*sizeof(int));
     acc_entries = (AccessCount*)malloc((max_entries+1)*sizeof(AccessCount));
-    if (!dict || !entries || !acc_dict || !acc_entries) {
+    budget_per_bucket = (uint8_t*)malloc(hashmap_size*sizeof(uint8_t));
+    if (!dict || !entries || !acc_dict || !acc_entries || !budget_per_bucket) {
         cout << "Failed initializing hashmap memory" << endl;
     }
-    memset(dict, 0, hashmap_size*sizeof(DictEntry));
+    memset(dict, 0, hashmap_size*sizeof(KV*));
     memset(entries, 0, max_entries*sizeof(KV));
-    memset(acc_dict, 0, hashmap_size*sizeof(AccessCount*));
-    memset(acc_entries, 0, max_entries*sizeof(AccessCount));
+    memset(acc_dict, 0, (hashmap_size+1)*sizeof(AccessCount*));
+    memset(acc_entries, 0, (max_entries+1)*sizeof(AccessCount));
+    memset(budget_per_bucket, 0, hashmap_size*sizeof(uint8_t));
 
     acc_dict[0] = 0;
     acc_entries[0].next = 0;
@@ -48,10 +51,10 @@ inline void Hashjoinvip::insert(int key, void* ptr) {
     int hash_loc = (key*prime) >> (32 - hashpower);
     entries[entriesOffset].key = key;
     entries[entriesOffset].ptr = ptr;
-    entries[entriesOffset].next = dict[hash_loc].head;
+    entries[entriesOffset].next = dict[hash_loc];
     acc_entries[entriesOffset+1].next = acc_dict[hash_loc+1];
-    dict[hash_loc].head = &entries[entriesOffset];
-    dict[hash_loc].budget += 1;
+    dict[hash_loc] = &entries[entriesOffset];
+    budget_per_bucket[hash_loc] += 1;
     acc_dict[hash_loc+1] = entriesOffset+1;
     entriesOffset += 1;
 }
@@ -93,8 +96,9 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
     for (; i<n_learning; i++) {
         key = *((int*)addr);
         hash_loc = (key*prime) >> (32 - hashpower);
-        ptr = dict[hash_loc].head;
-        budget = !!(dict[hash_loc].budget);
+        ptr = dict[hash_loc];
+        budget = !!(budget_per_bucket[hash_loc]);
+        budget_per_bucket[hash_loc] -= budget;
         min_count_ptr = ptr;
         acc_offset = acc_dict[(hash_loc+1)*budget];
         min_count_acc_offset = acc_offset;
@@ -135,12 +139,11 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
             min_count_ptr->ptr = payload;
         }
         addr += incr;
-        dict[hash_loc].budget -= budget;
     }
     for (; i<f.numtuples; i++) {
         key = *((int*)addr);
         hash_loc = (key*prime) >> (32 - hashpower);
-        ptr = dict[hash_loc].head;
+        ptr = dict[hash_loc];
         while (ptr != NULL) {
             if (ptr->key == key) {
                 // copy to output
