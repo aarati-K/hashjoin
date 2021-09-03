@@ -3,7 +3,7 @@
 
 include system.inc
 
-CXX=clang++
+CXX=g++
 # CPPFLAGS=-Idist/include/
 #CPPFLAGS+=-DPREFETCH
 #CPPFLAGS+=-DOUTPUT_AGGREGATE
