@@ -8,6 +8,7 @@ Hashjoinvip::Hashjoinvip() {
     acc_entries = NULL;
     budget_per_bucket = NULL;
     entriesOffset = 0;
+    accessesOffset = 0;
     hashmap_size = 0;
     max_entries = 0;
 }
@@ -37,6 +38,7 @@ void Hashjoinvip::initHashmap(int n) {
 
     acc_dict[0] = 0;
     acc_entries[0].next = 0;
+    accessesOffset = 1;
 }
 
 inline void Hashjoinvip::insert(int key, void* ptr) {
@@ -52,10 +54,8 @@ inline void Hashjoinvip::insert(int key, void* ptr) {
     entries[entriesOffset].key = key;
     entries[entriesOffset].ptr = ptr;
     entries[entriesOffset].next = dict[hash_loc];
-    acc_entries[entriesOffset+1].next = acc_dict[hash_loc+1];
     dict[hash_loc] = &entries[entriesOffset];
     budget_per_bucket[hash_loc] += 1;
-    acc_dict[hash_loc+1] = entriesOffset+1;
     entriesOffset += 1;
 }
 
@@ -89,7 +89,7 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
     uint8_t budget;
     uint8_t flag;
     KV *ptr, *min_count_ptr;
-    int acc_offset, min_count_acc_offset;
+    int acc_offset, prev_acc_offset, min_count_acc_offset;
     void* output_it = output;
     int i = 0;
     // int num_swaps = 0;
@@ -101,6 +101,12 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
         budget_per_bucket[hash_loc] -= budget;
         min_count_ptr = ptr;
         acc_offset = acc_dict[(hash_loc+1)*budget];
+        if (budget && !acc_offset) {
+            acc_offset = accessesOffset;
+            acc_dict[(hash_loc+1)] = accessesOffset;
+            accessesOffset += 1;
+        }
+        prev_acc_offset = 0;
         min_count_acc_offset = acc_offset;
         while (ptr != NULL) {
             if (ptr->key == key) {
@@ -121,7 +127,13 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
             // min_count_ptr = min_count_ptr + flag*(ptr - min_count_ptr);
             m.displacement += 1;
             ptr = ptr->next;
+            prev_acc_offset = acc_offset;
             acc_offset = acc_entries[acc_offset].next;
+            if (prev_acc_offset && !acc_offset) {
+                acc_offset = accessesOffset;
+                acc_entries[prev_acc_offset].next = acc_offset;
+                accessesOffset += 1;
+            }
         }
         // Swap
         if (budget && acc_entries[acc_offset].count > acc_entries[min_count_acc_offset].count) {

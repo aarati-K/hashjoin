@@ -46,6 +46,7 @@ private:
     AccessCount *acc_entries;
     uint8_t *budget_per_bucket;
     int entriesOffset;
+    int accessesOffset;
     int max_entries;
     int hashmap_size;
     int hashpower;
