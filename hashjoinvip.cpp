@@ -25,7 +25,7 @@ void Hashjoinvip::initHashmap(int n) {
     dict = (KV**)malloc(hashmap_size*sizeof(KV*));
     entries = (KV*)malloc(max_entries*sizeof(KV));
     acc_dict = (int*)malloc((hashmap_size+1)*sizeof(int));
-    acc_entries = (AccessCount*)malloc((max_entries+1)*sizeof(AccessCount));
+    acc_entries = (AccessCount*)malloc((max_entries/2+1)*sizeof(AccessCount));
     budget_per_bucket = (uint8_t*)malloc(hashmap_size*sizeof(uint8_t));
     if (!dict || !entries || !acc_dict || !acc_entries || !budget_per_bucket) {
         cout << "Failed initializing hashmap memory" << endl;
@@ -33,11 +33,12 @@ void Hashjoinvip::initHashmap(int n) {
     memset(dict, 0, hashmap_size*sizeof(KV*));
     memset(entries, 0, max_entries*sizeof(KV));
     memset(acc_dict, 0, (hashmap_size+1)*sizeof(AccessCount*));
-    memset(acc_entries, 0, (max_entries+1)*sizeof(AccessCount));
+    memset(acc_entries, 0, (max_entries/2+1)*sizeof(AccessCount));
     memset(budget_per_bucket, 0, hashmap_size*sizeof(uint8_t));
 
-    acc_dict[0] = 0;
-    acc_entries[0].next = 0;
+    // That should happen implicitly with memset
+    // acc_dict[0] = 0;
+    // acc_entries[0].next = 0;
     accessesOffset = 1;
 }
 
@@ -90,6 +91,7 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
     uint8_t flag;
     KV *ptr, *min_count_ptr;
     int acc_offset, prev_acc_offset, min_count_acc_offset;
+    int acc_index, min_count_acc_index;
     void* output_it = output;
     int i = 0;
     // int num_swaps = 0;
@@ -106,8 +108,10 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
             acc_dict[(hash_loc+1)] = accessesOffset;
             accessesOffset += 1;
         }
+        acc_index = 0;
         prev_acc_offset = 0;
         min_count_acc_offset = acc_offset;
+        min_count_acc_index = 0;
         while (ptr != NULL) {
             if (ptr->key == key) {
                 // copy to output
@@ -115,11 +119,12 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
                 output_it = (char*)output_it + f.incr;
                 memcpy(output_it, ptr->ptr, d.incr);
                 output_it = (char*)output_it + d.incr;
-                acc_entries[acc_offset].count += 1;
+                acc_entries[acc_offset].count[acc_index] += 1;
                 break; // assuming pk-fk join
             }
-            if (budget && acc_entries[acc_offset].count < acc_entries[min_count_acc_offset].count) {
+            if (budget && acc_entries[acc_offset].count[acc_index] < acc_entries[min_count_acc_offset].count[min_count_acc_index]) {
                 min_count_acc_offset = acc_offset;
+                min_count_acc_index = acc_index;
                 min_count_ptr = ptr;
             }
             // flag = 1 & (acc_entries[acc_offset].count - acc_entries[min_count_acc_offset].count) >> 7;
@@ -127,21 +132,24 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
             // min_count_ptr = min_count_ptr + flag*(ptr - min_count_ptr);
             m.displacement += 1;
             ptr = ptr->next;
-            prev_acc_offset = acc_offset;
-            acc_offset = acc_entries[acc_offset].next;
-            if (prev_acc_offset && !acc_offset) {
-                acc_offset = accessesOffset;
-                acc_entries[prev_acc_offset].next = acc_offset;
-                accessesOffset += 1;
+            acc_index = (acc_index + 1) % 4;
+            if (!acc_index) {
+                prev_acc_offset = acc_offset;
+                acc_offset = acc_entries[acc_offset].next;
+                if (prev_acc_offset && !acc_offset) {
+                    acc_offset = accessesOffset;
+                    acc_entries[prev_acc_offset].next = acc_offset;
+                    accessesOffset += 1;
+                }
             }
         }
         // Swap
-        if (budget && acc_entries[acc_offset].count > acc_entries[min_count_acc_offset].count) {
+        if (budget && acc_entries[acc_offset].count[acc_index] > acc_entries[min_count_acc_offset].count[min_count_acc_index]) {
             // num_swaps += 1;
 
-            uint8_t count = acc_entries[acc_offset].count;
-            acc_entries[acc_offset].count = acc_entries[min_count_acc_offset].count;
-            acc_entries[min_count_acc_offset].count = count;
+            uint8_t count = acc_entries[acc_offset].count[acc_index];
+            acc_entries[acc_offset].count[acc_index] = acc_entries[min_count_acc_offset].count[min_count_acc_index];
+            acc_entries[min_count_acc_offset].count[min_count_acc_index] = count;
 
             ptr->key = min_count_ptr->key;
             min_count_ptr->key = key;

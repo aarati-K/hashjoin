@@ -26,7 +26,7 @@ typedef struct KV {
 #define _HASHJOINVIP_H_
 
 typedef struct AccessCount {
-    uint8_t count = 0;
+    uint8_t count[4];
     int next = 0;   // index into the acc_entries array
 } AccessCount;
 
