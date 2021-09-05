@@ -42,9 +42,9 @@ private:
     void* output;
     KV **dict;
     KV *entries;
-    int* acc_dict;
+    // int* acc_dict;
     AccessCount *acc_entries;
-    uint8_t *budget_per_bucket;
+    // AccessCount *budget_per_bucket;
     int entriesOffset;
     int accessesOffset;
     int max_entries;
