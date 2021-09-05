@@ -7,7 +7,7 @@ Table::Table() {
     initialized = false;
 }
 
-void Table::addCol(ColumnType ct, int size) {
+void Table::addCol(ColumnType ct, long size) {
     cols.push_back(ct);
     coloffset.push_back(tuplesize);
     switch(ct) {
@@ -43,7 +43,7 @@ int Table::numCols() {
 void Table::printCols() {
     cout << "Tuple Size: " << tuplesize << endl;
     vector<ColumnType>::iterator it;
-    vector<int>::iterator szit;
+    vector<long>::iterator szit;
     szit = colsize.begin();
     for (it = cols.begin(); it != cols.end(); it++, szit++) {
         switch(*it) {
@@ -69,7 +69,7 @@ void Table::printCols() {
 }
 
 void Table::printColOffsets() {
-    vector<int>::iterator it;
+    vector<long>::iterator it;
     for (it=coloffset.begin(); it!=coloffset.end(); it++) {
         cout << *it << endl;
     }
@@ -79,7 +79,7 @@ int Table::getNumTuples() {
     return numtuples;
 }
 
-int Table::getTupleSize() {
+long Table::getTupleSize() {
     return tuplesize;
 }
 
@@ -89,7 +89,7 @@ void Table::loadFromFile(string fname, char sep) {
     // vector<string> tokens;
     // vector<string>::iterator tok_it;
     vector<ColumnType>::iterator schema_it;
-    vector<int>::iterator col_size_it;
+    vector<long>::iterator col_size_it;
     int numlines = 0;
     void* buf_it;
 

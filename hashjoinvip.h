@@ -48,7 +48,7 @@ private:
     int entriesOffset;
     int accessesOffset;
     int max_entries;
-    int hashmap_size;
+    long hashmap_size;
     int hashpower;
     uint prime = 472882027;
     bool initialized = false;

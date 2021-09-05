@@ -23,9 +23,9 @@ enum ColumnType {
 struct ColumnInfo {
     ColumnType ct;
     void* startAddr = 0;
-    int incr = 0;
+    long incr = 0;
     int numtuples = 0;
-    int offset;
+    long offset;
 };
 
 typedef struct ColumnInfo ColumnInfo;
@@ -33,21 +33,21 @@ typedef struct ColumnInfo ColumnInfo;
 class Table {
 public:
     Table();
-    void addCol(ColumnType ct, int size);
+    void addCol(ColumnType ct, long size);
     int numCols();
     void printCols();
     void printColOffsets();
     int getNumTuples();
-    int getTupleSize();
+    long getTupleSize();
     void loadFromFile(string fname, char sep);
     ColumnInfo getColumnInfo(int col);
     void shuffle();
 private:
     void* buf;
     vector<ColumnType> cols;
-    vector<int> colsize;
-    vector<int> coloffset;
-    int tuplesize;
+    vector<long> colsize;
+    vector<long> coloffset;
+    long tuplesize;
     int numtuples;
     bool initialized;
 };

@@ -73,7 +73,7 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
     // Build hashmap
     clock_gettime(CLOCK_MONOTONIC, &start_time);
     void *addr = d.startAddr;
-    int incr = d.incr;
+    long incr = d.incr;
     for (int i=0; i<d.numtuples; i++) {
         insert(*((int*)addr), (char*)addr - d.offset);
         addr = (char*)addr + incr;
