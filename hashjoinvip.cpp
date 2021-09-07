@@ -160,6 +160,7 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
         }
         addr = (char*)addr + incr;
     }
+    _mm_clflushopt(acc_entries);
 
     for (; i<f.numtuples; i++) {
         key = *((int*)addr);

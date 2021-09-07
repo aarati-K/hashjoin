@@ -5,6 +5,7 @@
 #include <sys/types.h>
 // #include <stack>
 // #include <fstream>
+#include <x86intrin.h>
 
 #include "table.h"
 #include "metrics.h"

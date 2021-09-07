@@ -14,6 +14,7 @@ CXX=g++
 # CXXFLAGS=$(SYSFLAGS)
 #CXXFLAGS+=-g -O0 #-Wall
 CXXFLAGS=-O3
+CXXFLAGS+=-mclflushopt
 # LDFLAGS=-Ldist/lib/
 # LDLIBS=-lconfig++ -lpthread
 
