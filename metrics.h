@@ -8,6 +8,8 @@ using namespace std;
 #ifndef _METRICS_H_
 #define _METRICS_H_
 
+#define _COLLECT_METRICS_ 0
+
 typedef struct Metrics {
     ulong total_time = 0; // coarse metric
     ulong build_cycles = 0;
