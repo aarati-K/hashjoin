@@ -25,7 +25,7 @@ void Hashjoinvip::initHashmap(int n) {
     dict = (KV**)malloc(hashmap_size*sizeof(KV*));
     entries = (KV*)malloc(max_entries*sizeof(KV));
     // acc_dict = (int*)malloc((hashmap_size+1)*sizeof(int));
-    acc_entries = (AccessCount*)malloc((max_entries+1)*sizeof(AccessCount));
+    acc_entries = (AccessCount*)malloc((2*max_entries+1)*sizeof(AccessCount));
     // budget_per_bucket = (AccessCount*)malloc((hashmap_size*sizeof(AccessCount));
     if (!dict || !entries || !acc_entries) {
         cout << "Failed initializing hashmap memory" << endl;
@@ -33,7 +33,7 @@ void Hashjoinvip::initHashmap(int n) {
     memset(dict, 0, hashmap_size*sizeof(KV*));
     memset(entries, 0, max_entries*sizeof(KV));
     // memset(acc_dict, 0, (hashmap_size+1)*sizeof(AccessCount*));
-    memset(acc_entries, 0, (max_entries+1)*sizeof(AccessCount));
+    memset(acc_entries, 0, (2*max_entries+1)*sizeof(AccessCount));
     // memset(budget_per_bucket, 0, hashmap_size*sizeof(uint8_t));
 
     // That should happen implicitly with memset
@@ -160,7 +160,7 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
         }
         addr = (char*)addr + incr;
     }
-    for (long addr=0; addr < (max_entries+1)*sizeof(AccessCount); addr += 64) {
+    for (long addr=0; addr < (2*max_entries+1)*sizeof(AccessCount); addr += 64) {
         _mm_clflushopt((char*)acc_entries+addr);
     }
 
