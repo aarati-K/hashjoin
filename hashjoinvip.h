@@ -54,7 +54,7 @@ private:
     int hashpower;
     uint prime = 472882027;
     bool initialized = false;
-    float max_sf = 1;
+    float max_sf = 2;
 };
 
 #endif // _HASHJOINVIP_H_

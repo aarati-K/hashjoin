@@ -33,7 +33,7 @@ void Hashjoinvip::initHashmap(int n) {
     memset(dict, 0, hashmap_size*sizeof(KV*));
     memset(entries, 0, max_entries*sizeof(KV));
     // memset(acc_dict, 0, (hashmap_size+1)*sizeof(AccessCount*));
-    memset(acc_entries, 0, (2*max_entries+1)*sizeof(AccessCount));
+    memset(acc_entries, 0, (max_entries+1)*sizeof(AccessCount));
     // memset(budget_per_bucket, 0, hashmap_size*sizeof(uint8_t));
 
     // That should happen implicitly with memset
