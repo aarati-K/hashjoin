@@ -16,7 +16,7 @@ using namespace std;
 #define _KV_
 
 typedef struct KV {
-    int key = 0;
+    ulong key = 0;
     void* ptr = NULL;       // ptr to data
     struct KV* next = NULL;
 } KV;
@@ -35,9 +35,10 @@ class Hashjoinvip {
 public:
     Hashjoinvip();
     void initHashmap (int n);
-    void insert (int key, void* ptr);
+    void insert (ulong key, void* ptr);
     void *exec(Table &fact, int factcol, Table &dim, int dimcol);
 protected:
+    ulong _murmurHash(ulong);
     void build();
 private:
     void* output;
@@ -49,7 +50,7 @@ private:
     int entriesOffset;
     int accessesOffset;
     int max_entries;
-    long hashmap_size;
+    ulong hashmap_size;
     int hashpower;
     uint prime = 472882027;
     bool initialized = false;

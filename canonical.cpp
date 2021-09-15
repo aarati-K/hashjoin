@@ -18,10 +18,10 @@ int main(int argc, char** argv) {
     }
 
     Table fact, dim;
-    fact.addCol(CT_INT, sizeof(int));
-    fact.addCol(CT_INT, sizeof(int));
-    dim.addCol(CT_INT, sizeof(int));
-    dim.addCol(CT_INT, sizeof(int));
+    fact.addCol(CT_LONG, sizeof(ulong));
+    fact.addCol(CT_LONG, sizeof(ulong));
+    dim.addCol(CT_LONG, sizeof(ulong));
+    dim.addCol(CT_LONG, sizeof(ulong));
 
     // Load the tables
     fact.loadFromFile(string("data/fact.tbl"), '|');

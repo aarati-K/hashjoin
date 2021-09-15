@@ -14,7 +14,7 @@ using namespace std;
 
 enum ColumnType {
     CT_INT,     // integer
-    CT_LONG,    // long
+    CT_LONG,    // ulong
     CT_FLOAT,   // float
     CT_CHAR,    // single char
     CT_STRING   // string of chars, up to a max size, null terminated
@@ -23,9 +23,9 @@ enum ColumnType {
 struct ColumnInfo {
     ColumnType ct;
     void* startAddr = 0;
-    long incr = 0;
+    ulong incr = 0;
     int numtuples = 0;
-    long offset;
+    ulong offset;
 };
 
 typedef struct ColumnInfo ColumnInfo;
@@ -33,21 +33,21 @@ typedef struct ColumnInfo ColumnInfo;
 class Table {
 public:
     Table();
-    void addCol(ColumnType ct, long size);
+    void addCol(ColumnType ct, ulong size);
     int numCols();
     void printCols();
     void printColOffsets();
     int getNumTuples();
-    long getTupleSize();
+    ulong getTupleSize();
     void loadFromFile(string fname, char sep);
     ColumnInfo getColumnInfo(int col);
     void shuffle();
 private:
     void* buf;
     vector<ColumnType> cols;
-    vector<long> colsize;
-    vector<long> coloffset;
-    long tuplesize;
+    vector<ulong> colsize;
+    vector<ulong> coloffset;
+    ulong tuplesize;
     int numtuples;
     bool initialized;
 };

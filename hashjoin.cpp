@@ -27,7 +27,7 @@ void Hashjoin::initHashmap(int n) {
     memset(entries, 0, max_entries*sizeof(KV));
 }
 
-inline void Hashjoin::insert(int key, void* ptr) {
+inline void Hashjoin::insert(ulong key, void* ptr) {
     // if (!initialized) {
     //     cout << "Hashmap not initialized yet" << endl;
     //     return;
@@ -36,7 +36,7 @@ inline void Hashjoin::insert(int key, void* ptr) {
     //     cout << "Can't insert anymore" << endl;
     //     return;
     // }
-    int hash_loc = (key*prime) >> (32 - hashpower);
+    ulong hash_loc = _murmurHash(key);
     entries[entriesOffset].key = key;
     entries[entriesOffset].ptr = ptr;
     entries[entriesOffset].next = dict[hash_loc];
@@ -52,14 +52,14 @@ void* Hashjoin::exec(Table &fact, int factcol, Table &dim, int dimcol) {
 
     // Assuming join is on integer attributes
     initHashmap(d.numtuples);
-    output = malloc(long(f.numtuples)*(f.incr + d.incr)); // conservative
+    output = malloc(ulong(f.numtuples)*(f.incr + d.incr)); // conservative
 
     // Build hashmap
     clock_gettime(CLOCK_MONOTONIC, &start_time);
     void *addr = d.startAddr;
-    long incr = d.incr;
+    ulong incr = d.incr;
     for (int i=0; i<d.numtuples; i++) {
-        insert(*((int*)addr), (char*)addr - d.offset);
+        insert(*((ulong*)addr), (char*)addr - d.offset);
         addr = (char*)addr + incr;
     }
     clock_gettime(CLOCK_MONOTONIC, &end_time);
@@ -69,12 +69,12 @@ void* Hashjoin::exec(Table &fact, int factcol, Table &dim, int dimcol) {
     clock_gettime(CLOCK_MONOTONIC, &start_time);
     addr = f.startAddr;
     incr = f.incr;
-    int key, hash_loc;
+    ulong key, hash_loc;
     KV* ptr;
     void* output_it = output;
     for (int i=0; i<f.numtuples; i++) {
-        key = *((int*)addr);
-        hash_loc = (key*prime) >> (32 - hashpower);
+        key = *((ulong*)addr);
+        hash_loc = _murmurHash(key);
         ptr = dict[hash_loc];
         while (ptr != NULL) {
             if (ptr->key == key) {
@@ -100,4 +100,14 @@ void* Hashjoin::exec(Table &fact, int factcol, Table &dim, int dimcol) {
     cout << "Probe + Materialize time: " << m.probe_and_materialize_time << endl;
     cout << "Displacement: " << m.displacement << endl;
     return output;
+}
+
+inline ulong Hashjoin::_murmurHash(ulong h) {
+    h ^= h >> 33;
+    h *= 0xff51afd7ed558ccd;
+    h ^= h >> 33;
+    h *= 0xc4ceb9fe1a85ec53;
+    h ^= h >> 33;
+    h = h >> (64 - hashpower);
+    return h;
 }

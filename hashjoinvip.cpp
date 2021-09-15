@@ -42,7 +42,7 @@ void Hashjoinvip::initHashmap(int n) {
     accessesOffset = hashmap_size + 1;
 }
 
-inline void Hashjoinvip::insert(int key, void* ptr) {
+inline void Hashjoinvip::insert(ulong key, void* ptr) {
     // if (!initialized) {
     //     cout << "Hashmap not initialized yet" << endl;
     //     return;
@@ -51,7 +51,7 @@ inline void Hashjoinvip::insert(int key, void* ptr) {
     //     cout << "Can't insert anymore" << endl;
     //     return;
     // }
-    int hash_loc = (key*prime) >> (32 - hashpower);
+    ulong hash_loc = _murmurHash(key);
     entries[entriesOffset].key = key;
     entries[entriesOffset].ptr = ptr;
     entries[entriesOffset].next = dict[hash_loc];
@@ -68,14 +68,14 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
 
     // Assuming join is on integer attributes
     initHashmap(d.numtuples);
-    output = malloc(long(f.numtuples)*(f.incr + d.incr)); // conservative
+    output = malloc(ulong(f.numtuples)*(f.incr + d.incr)); // conservative
 
     // Build hashmap
     clock_gettime(CLOCK_MONOTONIC, &start_time);
     void *addr = d.startAddr;
-    long incr = d.incr;
+    ulong incr = d.incr;
     for (int i=0; i<d.numtuples; i++) {
-        insert(*((int*)addr), (char*)addr - d.offset);
+        insert(*((ulong*)addr), (char*)addr - d.offset);
         addr = (char*)addr + incr;
     }
     clock_gettime(CLOCK_MONOTONIC, &end_time);
@@ -86,7 +86,7 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
     int n_learning = (d.numtuples < f.numtuples/60) ? d.numtuples : f.numtuples/60;
     addr = f.startAddr;
     incr = f.incr;
-    int key, hash_loc;
+    ulong key, hash_loc;
     uint8_t budget;
     uint8_t flag;
     KV *ptr, *min_count_ptr;
@@ -96,8 +96,8 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
     int i = 0;
     // int num_swaps = 0;
     for (; i<n_learning; i++) {
-        key = *((int*)addr);
-        hash_loc = (key*prime) >> (32 - hashpower);
+        key = *((ulong*)addr);
+        hash_loc = _murmurHash(key);
         ptr = dict[hash_loc];
         budget = !!(acc_entries[hash_loc+1].count[0]);
         acc_entries[hash_loc+1].count[0] -= budget;
@@ -160,13 +160,13 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
         }
         addr = (char*)addr + incr;
     }
-    for (long addr=0; addr < (2*max_entries+1)*sizeof(AccessCount); addr += 64) {
+    for (ulong addr=0; addr < (2*max_entries+1)*sizeof(AccessCount); addr += 64) {
         _mm_clflushopt((char*)acc_entries+addr);
     }
 
     for (; i<f.numtuples; i++) {
-        key = *((int*)addr);
-        hash_loc = (key*prime) >> (32 - hashpower);
+        key = *((ulong*)addr);
+        hash_loc = _murmurHash(key);
         ptr = dict[hash_loc];
         while (ptr != NULL) {
             if (ptr->key == key) {
@@ -210,4 +210,14 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
     // }
     // file.close();
     return output;
+}
+
+inline ulong Hashjoinvip::_murmurHash(ulong h) {
+    h ^= h >> 33;
+    h *= 0xff51afd7ed558ccd;
+    h ^= h >> 33;
+    h *= 0xc4ceb9fe1a85ec53;
+    h ^= h >> 33;
+    h = h >> (64 - hashpower);
+    return h;
 }
