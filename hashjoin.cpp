@@ -48,6 +48,7 @@ void* Hashjoin::exec(Table &fact, int factcol, Table &dim, int dimcol) {
     ColumnInfo f = fact.getColumnInfo(factcol);
     ColumnInfo d = dim.getColumnInfo(dimcol);
     Metrics m;
+    ulong cycles;
     struct timespec start_time, end_time;
 
     // Assuming join is on integer attributes
@@ -55,18 +56,18 @@ void* Hashjoin::exec(Table &fact, int factcol, Table &dim, int dimcol) {
     output = malloc(ulong(f.numtuples)*(f.incr + d.incr)); // conservative
 
     // Build hashmap
-    clock_gettime(CLOCK_MONOTONIC, &start_time);
+    getMetricsStart(m);
+    cycles = rdpmc_core_cycles();
     void *addr = d.startAddr;
     ulong incr = d.incr;
     for (int i=0; i<d.numtuples; i++) {
         insert(*((ulong*)addr), (char*)addr - d.offset);
         addr = (char*)addr + incr;
     }
-    clock_gettime(CLOCK_MONOTONIC, &end_time);
-    m.build_time = getTimeDiff(start_time, end_time);
+    m.build_cycles = rdpmc_core_cycles() - cycles;
 
     // Probe hashmap
-    clock_gettime(CLOCK_MONOTONIC, &start_time);
+    cycles = rdpmc_core_cycles();
     addr = f.startAddr;
     incr = f.incr;
     ulong key, hash_loc;
@@ -90,15 +91,9 @@ void* Hashjoin::exec(Table &fact, int factcol, Table &dim, int dimcol) {
         }
         addr = (char*)addr + incr;
     }
-    clock_gettime(CLOCK_MONOTONIC, &end_time);
-    m.probe_and_materialize_time = getTimeDiff(start_time, end_time);
-    m.total_time = m.build_time + m.probe_and_materialize_time;
-
-    // Metrics
-    cout << "Total time: " << m.total_time << endl;
-    cout << "Build time: " << m.build_time << endl;
-    cout << "Probe + Materialize time: " << m.probe_and_materialize_time << endl;
-    cout << "Displacement: " << m.displacement << endl;
+    m.probe_and_materialize_cycles = rdpmc_core_cycles() - cycles;
+    getMetricsEnd(m);
+    printMetrics(m);
     return output;
 }
 

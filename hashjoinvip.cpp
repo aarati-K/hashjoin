@@ -21,7 +21,7 @@ void Hashjoinvip::initHashmap(int n) {
         hashmap_size = 2*hashmap_size;
         hashpower += 1;
     }
-    cout << "Hashpower: " << hashpower << endl;
+    // cout << "Hashpower: " << hashpower << endl;
     dict = (KV**)malloc(hashmap_size*sizeof(KV*));
     entries = (KV*)malloc(max_entries*sizeof(KV));
     // acc_dict = (int*)malloc((hashmap_size+1)*sizeof(int));
@@ -64,25 +64,25 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
     ColumnInfo f = fact.getColumnInfo(factcol);
     ColumnInfo d = dim.getColumnInfo(dimcol);
     Metrics m;
-    struct timespec start_time, end_time;
+    ulong cycles;
 
     // Assuming join is on integer attributes
     initHashmap(d.numtuples);
     output = malloc(ulong(f.numtuples)*(f.incr + d.incr)); // conservative
 
     // Build hashmap
-    clock_gettime(CLOCK_MONOTONIC, &start_time);
+    getMetricsStart(m);
+    cycles = rdpmc_core_cycles();
     void *addr = d.startAddr;
     ulong incr = d.incr;
     for (int i=0; i<d.numtuples; i++) {
         insert(*((ulong*)addr), (char*)addr - d.offset);
         addr = (char*)addr + incr;
     }
-    clock_gettime(CLOCK_MONOTONIC, &end_time);
-    m.build_time = getTimeDiff(start_time, end_time);
+    m.build_cycles = rdpmc_core_cycles() - cycles;
 
     // Probe hashmap
-    clock_gettime(CLOCK_MONOTONIC, &start_time);
+    cycles = rdpmc_core_cycles();
     int n_learning = (d.numtuples < f.numtuples/60) ? d.numtuples : f.numtuples/60;
     addr = f.startAddr;
     incr = f.incr;
@@ -163,7 +163,9 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
     for (ulong addr=0; addr < (2*max_entries+1)*sizeof(AccessCount); addr += 64) {
         _mm_clflushopt((char*)acc_entries+addr);
     }
+    m.learn_cycles = rdpmc_core_cycles() - cycles;
 
+    cycles = rdpmc_core_cycles();
     for (; i<f.numtuples; i++) {
         key = *((ulong*)addr);
         hash_loc = _murmurHash(key);
@@ -182,15 +184,10 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
         }
         addr = (char*)addr + incr;
     }
-    clock_gettime(CLOCK_MONOTONIC, &end_time);
-    m.probe_and_materialize_time = getTimeDiff(start_time, end_time);
-
-    m.total_time = m.build_time + m.probe_and_materialize_time;
+    m.probe_and_materialize_cycles = rdpmc_core_cycles() - cycles;
+    getMetricsEnd(m);
+    printMetrics(m);
     
-    cout << "Total time: " << m.total_time << endl;
-    cout << "Build time: " << m.build_time << endl;
-    cout << "Probe + Materialize time: " << m.probe_and_materialize_time << endl;
-    cout << "Displacement: " << m.displacement << endl;
     // cout << "Num swaps: " << num_swaps << endl;
 
     // // Store the hashmap to a file
