@@ -78,5 +78,5 @@ void printMetrics(Metrics &m) {
         << m.retiredInst << " "
         << m.build_cycles << " "
         << m.learn_cycles << " "
-        << m.probe_and_materialize_cycles;
+        << m.probe_and_materialize_cycles << endl;
 }
