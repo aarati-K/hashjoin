@@ -1,5 +1,6 @@
 #!/bin/bash
 
+make clean && make canonical
 for d in {12000000,12582912}
 do
     echo "Dimension Cardinality: ${d}"
