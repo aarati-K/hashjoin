@@ -4,9 +4,7 @@ Hashjoinvip::Hashjoinvip() {
     output = NULL;
     dict = NULL;
     entries = NULL;
-    // acc_dict = NULL;
     acc_entries = NULL;
-    // budget_per_bucket = NULL;
     entriesOffset = 0;
     accessesOffset = 0;
     hashmap_size = 0;
@@ -24,39 +22,23 @@ void Hashjoinvip::initHashmap(int n) {
     // cout << "Hashpower: " << hashpower << endl;
     dict = (KV**)malloc(hashmap_size*sizeof(KV*));
     entries = (KV*)malloc(max_entries*sizeof(KV));
-    // acc_dict = (int*)malloc((hashmap_size+1)*sizeof(int));
-    acc_entries = (AccessCount*)malloc((2*max_entries+1)*sizeof(AccessCount));
-    // budget_per_bucket = (AccessCount*)malloc((hashmap_size*sizeof(AccessCount));
+    acc_entries = (AccessCount*)malloc((2*max_entries)*sizeof(AccessCount));
     if (!dict || !entries || !acc_entries) {
         cout << "Failed initializing hashmap memory" << endl;
     }
     memset(dict, 0, hashmap_size*sizeof(KV*));
     memset(entries, 0, max_entries*sizeof(KV));
-    // memset(acc_dict, 0, (hashmap_size+1)*sizeof(AccessCount*));
     memset(acc_entries, 0, (max_entries+1)*sizeof(AccessCount));
-    // memset(budget_per_bucket, 0, hashmap_size*sizeof(uint8_t));
 
-    // That should happen implicitly with memset
-    // acc_dict[0] = 0;
-    // acc_entries[0].next = 0;
-    accessesOffset = hashmap_size + 1;
+    accessesOffset = hashmap_size;
 }
 
 inline void Hashjoinvip::insert(ulong key, void* ptr) {
-    // if (!initialized) {
-    //     cout << "Hashmap not initialized yet" << endl;
-    //     return;
-    // }
-    // if (entriesOffset == max_entries) {
-    //     cout << "Can't insert anymore" << endl;
-    //     return;
-    // }
     ulong hash_loc = _murmurHash(key);
     entries[entriesOffset].key = key;
     entries[entriesOffset].ptr = ptr;
     entries[entriesOffset].next = dict[hash_loc];
     dict[hash_loc] = &entries[entriesOffset];
-    acc_entries[hash_loc+1].count[0] += 1; // budget
     entriesOffset += 1;
 }
 
@@ -87,7 +69,7 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
     addr = f.startAddr;
     incr = f.incr;
     ulong key, hash_loc;
-    uint8_t budget;
+    // uint8_t budget;
     uint8_t flag;
     KV *ptr, *min_count_ptr;
     int acc_offset, prev_acc_offset, min_count_acc_offset;
@@ -99,19 +81,12 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
         key = *((ulong*)addr);
         hash_loc = _murmurHash(key);
         ptr = dict[hash_loc];
-        budget = !!(acc_entries[hash_loc+1].count[0]);
-        acc_entries[hash_loc+1].count[0] -= budget;
         min_count_ptr = ptr;
-        acc_offset = (hash_loc+1)*budget;
-        // if (budget && !acc_offset) {
-        //     acc_offset = accessesOffset;
-        //     acc_dict[(hash_loc+1)] = accessesOffset;
-        //     accessesOffset += 1;
-        // }
-        acc_index = 1;
-        prev_acc_offset = 0;
+        acc_offset = hash_loc;
+        acc_index = 0;
+        prev_acc_offset = hash_loc;
         min_count_acc_offset = acc_offset;
-        min_count_acc_index = 1;
+        min_count_acc_index = 0;
         while (ptr != NULL) {
             if (ptr->key == key) {
                 // copy to output
@@ -122,21 +97,18 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
                 acc_entries[acc_offset].count[acc_index] += 1;
                 break; // assuming pk-fk join
             }
-            if (budget && acc_entries[acc_offset].count[acc_index] < acc_entries[min_count_acc_offset].count[min_count_acc_index]) {
+            if (acc_entries[acc_offset].count[acc_index] < acc_entries[min_count_acc_offset].count[min_count_acc_index]) {
                 min_count_acc_offset = acc_offset;
                 min_count_acc_index = acc_index;
                 min_count_ptr = ptr;
             }
-            // flag = 1 & (acc_entries[acc_offset].count - acc_entries[min_count_acc_offset].count) >> 7;
-            // min_count_acc_offset = min_count_acc_offset + flag*(acc_offset - min_count_acc_offset);
-            // min_count_ptr = min_count_ptr + flag*(ptr - min_count_ptr);
             m.displacement += 1;
             ptr = ptr->next;
             acc_index = (acc_index + 1) % 4;
             if (!acc_index) {
                 prev_acc_offset = acc_offset;
                 acc_offset = acc_entries[acc_offset].next;
-                if (prev_acc_offset && !acc_offset) {
+                if (!acc_offset) {
                     acc_offset = accessesOffset;
                     acc_entries[prev_acc_offset].next = acc_offset;
                     accessesOffset += 1;
@@ -144,7 +116,7 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
             }
         }
         // Swap
-        if (budget && acc_entries[acc_offset].count[acc_index] > acc_entries[min_count_acc_offset].count[min_count_acc_index]) {
+        if (acc_entries[acc_offset].count[acc_index] > acc_entries[min_count_acc_offset].count[min_count_acc_index]) {
             // num_swaps += 1;
 
             uint8_t count = acc_entries[acc_offset].count[acc_index];
