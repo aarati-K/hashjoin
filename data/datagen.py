@@ -8,7 +8,7 @@ if l < 4:
 
 zipf = float(sys.argv[1])
 d = int(sys.argv[2])
-ratio_d_to_f = float(sys.argv[3])
+ratio_d_to_f = int(sys.argv[3])
 f = ratio_d_to_f*d
 
 if l > 4:
