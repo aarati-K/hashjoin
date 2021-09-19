@@ -4,7 +4,7 @@ import sys
 l = len(sys.argv)
 if l < 4:
     print "Usage: python datagen.py <zipf> <card_d> <ratio_d_to_f> {<seed>}"
-    return
+    quit()
 
 zipf = float(sys.argv[1])
 d = int(sys.argv[2])
