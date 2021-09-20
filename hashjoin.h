@@ -33,7 +33,7 @@ protected:
     ulong _murmurHash(ulong);
     void build();
 private:
-    void* output;
+    void** output;
     KV **dict;
     KV *entries;
     int entriesOffset;

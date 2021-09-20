@@ -53,7 +53,7 @@ void* Hashjoin::exec(Table &fact, int factcol, Table &dim, int dimcol) {
 
     // Assuming join is on integer attributes
     initHashmap(d.numtuples);
-    output = malloc(ulong(f.numtuples)*(f.incr + d.incr)); // conservative
+    output = (void**)malloc(ulong(f.numtuples)*2*sizeof(void*)); // conservative
 
     // Build hashmap
     getMetricsStart(m);
@@ -72,7 +72,7 @@ void* Hashjoin::exec(Table &fact, int factcol, Table &dim, int dimcol) {
     incr = f.incr;
     ulong key, hash_loc;
     KV* ptr;
-    void* output_it = output;
+    void** output_it = output;
     for (int i=0; i<f.numtuples; i++) {
         key = *((ulong*)addr);
         hash_loc = _murmurHash(key);
@@ -80,10 +80,10 @@ void* Hashjoin::exec(Table &fact, int factcol, Table &dim, int dimcol) {
         while (ptr != NULL) {
             if (ptr->key == key) {
                 // copy to output
-                memcpy(output_it, (char*)addr - f.offset, f.incr);
-                output_it = (char*)output_it + f.incr;
-                memcpy(output_it, ptr->ptr, d.incr);
-                output_it = (char*)output_it + d.incr;
+                *(output_it) = (char*)addr - f.offset;
+                output_it = output_it + 1;
+                *(output_it) = ptr->ptr;
+                output_it = output_it + 1;
                 break; // assuming pk-fk join
             }
             m.displacement += 1;

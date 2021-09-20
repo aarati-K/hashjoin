@@ -50,7 +50,7 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
 
     // Assuming join is on integer attributes
     initHashmap(d.numtuples);
-    output = malloc(ulong(f.numtuples)*(f.incr + d.incr)); // conservative
+    output = (void**)malloc(ulong(f.numtuples)*2*sizeof(void*)); // conservative
 
     // Build hashmap
     getMetricsStart(m);
@@ -74,7 +74,7 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
     KV *ptr, *min_count_ptr;
     int acc_offset, prev_acc_offset, min_count_acc_offset;
     int acc_index, min_count_acc_index;
-    void* output_it = output;
+    void** output_it = output;
     int i = 0;
     // int num_swaps = 0;
     for (; i<n_learning; i++) {
@@ -90,10 +90,10 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
         while (ptr != NULL) {
             if (ptr->key == key) {
                 // copy to output
-                memcpy(output_it, (char*)addr - f.offset, f.incr);
-                output_it = (char*)output_it + f.incr;
-                memcpy(output_it, ptr->ptr, d.incr);
-                output_it = (char*)output_it + d.incr;
+                *(output_it) = (char*)addr - f.offset;
+                output_it = output_it + 1;
+                *(output_it) = ptr->ptr;
+                output_it = output_it + 1;
                 acc_entries[acc_offset].count[acc_index] += 1;
                 break; // assuming pk-fk join
             }
@@ -145,10 +145,10 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
         while (ptr != NULL) {
             if (ptr->key == key) {
                 // copy to output
-                memcpy(output_it, (char*)addr - f.offset, f.incr);
-                output_it = (char*)output_it + f.incr;
-                memcpy(output_it, ptr->ptr, d.incr);
-                output_it = (char*)output_it + d.incr;
+                *(output_it) = (char*)addr - f.offset;
+                output_it = output_it + 1;
+                *(output_it) = ptr->ptr;
+                output_it = output_it + 1;
                 break; // assuming pk-fk join
             }
             m.displacement += 1;
