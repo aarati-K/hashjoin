@@ -1,7 +1,7 @@
 #!/bin/bash
 
-make clean && make canonical
-for d in {12000000,12582912}
+make clean && make
+for d in {12000000,}
 do
     echo "Dimension Cardinality: ${d}"
     for r in {16,}
