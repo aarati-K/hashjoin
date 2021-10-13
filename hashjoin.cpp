@@ -27,7 +27,7 @@ void Hashjoin::initHashmap(int n) {
     memset(entries, 0, max_entries*sizeof(KV));
 }
 
-inline void Hashjoin::insert(int key, void* ptr) {
+inline void Hashjoin::insert(ulong key, void* ptr) {
     // if (!initialized) {
     //     cout << "Hashmap not initialized yet" << endl;
     //     return;
@@ -36,7 +36,7 @@ inline void Hashjoin::insert(int key, void* ptr) {
     //     cout << "Can't insert anymore" << endl;
     //     return;
     // }
-    int hash_loc = (key*prime) >> (32 - hashpower);
+    ulong hash_loc = _murmurHash(key);
     entries[entriesOffset].key = key;
     entries[entriesOffset].ptr = ptr;
     entries[entriesOffset].next = dict[hash_loc];
@@ -48,56 +48,61 @@ void* Hashjoin::exec(Table &fact, int factcol, Table &dim, int dimcol) {
     ColumnInfo f = fact.getColumnInfo(factcol);
     ColumnInfo d = dim.getColumnInfo(dimcol);
     Metrics m;
+    ulong cycles;
     struct timespec start_time, end_time;
 
     // Assuming join is on integer attributes
     initHashmap(d.numtuples);
-    output = malloc(f.numtuples*(f.incr + d.incr)); // conservative
+    output = (void**)malloc(ulong(f.numtuples)*2*sizeof(void*)); // conservative
 
     // Build hashmap
-    clock_gettime(CLOCK_MONOTONIC, &start_time);
+    getMetricsStart(m);
+    cycles = rdpmc_core_cycles();
     void *addr = d.startAddr;
-    int incr = d.incr;
+    ulong incr = d.incr;
     for (int i=0; i<d.numtuples; i++) {
-        insert(*((int*)addr), addr - d.offset);
-        addr += incr;
+        insert(*((ulong*)addr), (char*)addr - d.offset);
+        addr = (char*)addr + incr;
     }
-    clock_gettime(CLOCK_MONOTONIC, &end_time);
-    m.build_time = getTimeDiff(start_time, end_time);
+    m.build_cycles = rdpmc_core_cycles() - cycles;
 
     // Probe hashmap
-    clock_gettime(CLOCK_MONOTONIC, &start_time);
+    cycles = rdpmc_core_cycles();
     addr = f.startAddr;
     incr = f.incr;
-    int key, hash_loc;
+    ulong key, hash_loc;
     KV* ptr;
-    void* output_it = output;
+    void** output_it = output;
     for (int i=0; i<f.numtuples; i++) {
-        key = *((int*)addr);
-        hash_loc = (key*prime) >> (32 - hashpower);
+        key = *((ulong*)addr);
+        hash_loc = _murmurHash(key);
         ptr = dict[hash_loc];
         while (ptr != NULL) {
             if (ptr->key == key) {
                 // copy to output
-                memcpy(output_it, addr - f.offset, f.incr);
-                output_it += f.incr;
-                memcpy(output_it, ptr->ptr, d.incr);
-                output_it += d.incr;
+                *(output_it) = (char*)addr - f.offset;
+                output_it = output_it + 1;
+                *(output_it) = ptr->ptr;
+                output_it = output_it + 1;
                 break; // assuming pk-fk join
             }
             m.displacement += 1;
             ptr = ptr->next;
         }
-        addr += incr;
+        addr = (char*)addr + incr;
     }
-    clock_gettime(CLOCK_MONOTONIC, &end_time);
-    m.probe_and_materialize_time = getTimeDiff(start_time, end_time);
-    m.total_time = m.build_time + m.probe_and_materialize_time;
-
-    // Metrics
-    cout << "Total time: " << m.total_time << endl;
-    cout << "Build time: " << m.build_time << endl;
-    cout << "Probe + Materialize time: " << m.probe_and_materialize_time << endl;
-    cout << "Displacement: " << m.displacement << endl;
+    m.probe_and_materialize_cycles = rdpmc_core_cycles() - cycles;
+    getMetricsEnd(m);
+    printMetrics(m);
     return output;
+}
+
+inline ulong Hashjoin::_murmurHash(ulong h) {
+    h ^= h >> 33;
+    h *= 0xff51afd7ed558ccd;
+    h ^= h >> 33;
+    h *= 0xc4ceb9fe1a85ec53;
+    h ^= h >> 33;
+    h = h >> (64 - hashpower);
+    return h;
 }

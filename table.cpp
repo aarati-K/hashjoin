@@ -7,7 +7,7 @@ Table::Table() {
     initialized = false;
 }
 
-void Table::addCol(ColumnType ct, int size) {
+void Table::addCol(ColumnType ct, ulong size) {
     cols.push_back(ct);
     coloffset.push_back(tuplesize);
     switch(ct) {
@@ -16,8 +16,8 @@ void Table::addCol(ColumnType ct, int size) {
             colsize.push_back(sizeof(int));
             break;
         case CT_LONG:
-            tuplesize += sizeof(long);
-            colsize.push_back(sizeof(long));
+            tuplesize += sizeof(ulong);
+            colsize.push_back(sizeof(ulong));
             break;
         case CT_FLOAT:
             tuplesize += sizeof(float);
@@ -43,7 +43,7 @@ int Table::numCols() {
 void Table::printCols() {
     cout << "Tuple Size: " << tuplesize << endl;
     vector<ColumnType>::iterator it;
-    vector<int>::iterator szit;
+    vector<ulong>::iterator szit;
     szit = colsize.begin();
     for (it = cols.begin(); it != cols.end(); it++, szit++) {
         switch(*it) {
@@ -51,7 +51,7 @@ void Table::printCols() {
                 cout << "Integer, " << *szit << endl;
                 break;
             case CT_LONG:
-                cout << "Long, " << *szit << endl;
+                cout << "ulong, " << *szit << endl;
                 break;
             case CT_FLOAT:
                 cout << "Float, " << *szit << endl;
@@ -69,7 +69,7 @@ void Table::printCols() {
 }
 
 void Table::printColOffsets() {
-    vector<int>::iterator it;
+    vector<ulong>::iterator it;
     for (it=coloffset.begin(); it!=coloffset.end(); it++) {
         cout << *it << endl;
     }
@@ -79,7 +79,7 @@ int Table::getNumTuples() {
     return numtuples;
 }
 
-int Table::getTupleSize() {
+ulong Table::getTupleSize() {
     return tuplesize;
 }
 
@@ -89,13 +89,13 @@ void Table::loadFromFile(string fname, char sep) {
     // vector<string> tokens;
     // vector<string>::iterator tok_it;
     vector<ColumnType>::iterator schema_it;
-    vector<int>::iterator col_size_it;
+    vector<ulong>::iterator col_size_it;
     int numlines = 0;
     void* buf_it;
 
     // variables for parsing tokens
     int i;
-    long l;
+    ulong l;
     float f;
     char c;
 
@@ -139,7 +139,7 @@ void Table::loadFromFile(string fname, char sep) {
                 case CT_LONG:
                     l = stol(tok);
                     // cout << l << endl;
-                    *((long*)buf_it) = l;
+                    *((ulong*)buf_it) = l;
                     break;
                 case CT_FLOAT:
                     f = stof(tok);
@@ -157,7 +157,7 @@ void Table::loadFromFile(string fname, char sep) {
                 default:
                     break;
             }
-            buf_it += *col_size_it;
+            buf_it = (char*)buf_it + *col_size_it;
             schema_it++;
             col_size_it++;
         }
@@ -177,17 +177,17 @@ ColumnInfo Table::getColumnInfo(int col) {
         return c;
     }
     c.ct = cols.at(col);
-    c.startAddr = buf + coloffset.at(col);
+    c.startAddr = (char*)buf + coloffset.at(col);
     c.offset = coloffset.at(col);
     c.incr = tuplesize;
     c.numtuples = numtuples;
     return c;
 }
 
-void __random_shuffle (int* array, unsigned long len) {
-    unsigned long pos;
+void __random_shuffle (int* array, ulong len) {
+    ulong pos;
     uint swap;
-    for (unsigned long i=len-1; i>0; i--) {
+    for (ulong i=len-1; i>0; i--) {
         pos = random()%(i+1);
         swap = array[i];
         array[i] = array[pos];
@@ -205,12 +205,12 @@ void Table::shuffle() {
     for (int i=0; i<numtuples; i++) {
         randOrder[i] = i;
     }
-    for (int i=0; i<3; i++) {
+    for (int i=0; i<5; i++) {
         __random_shuffle(randOrder, numtuples);
     }
 
     for (int i=0; i<numtuples; i++) {
-        memcpy(bufNew + randOrder[i]*tuplesize, buf + i*tuplesize, tuplesize);
+        memcpy((char*)bufNew + randOrder[i]*tuplesize, (char*)buf + i*tuplesize, tuplesize);
     }
     free(buf);
     buf = bufNew;

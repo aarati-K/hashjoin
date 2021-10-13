@@ -9,11 +9,12 @@ CXX=g++
 #CPPFLAGS+=-DOUTPUT_AGGREGATE
 #CPPFLAGS+=-DOUTPUT_WRITE_NT
 #CPPFLAGS+=-DOUTPUT_WRITE_NORMAL
-CPPFLAGS=-DOUTPUT_ASSEMBLE
+# CPPFLAGS=-DOUTPUT_ASSEMBLE
 #CPPFLAGS+=-DDEBUG #-DDEBUG2
-CXXFLAGS=$(SYSFLAGS)
+# CXXFLAGS=$(SYSFLAGS)
 #CXXFLAGS+=-g -O0 #-Wall
-CXXFLAGS+=-O3
+CXXFLAGS=-O3
+CXXFLAGS+=-mclflushopt
 # LDFLAGS=-Ldist/lib/
 # LDLIBS=-lconfig++ -lpthread
 
@@ -22,7 +23,7 @@ CXXFLAGS+=-O3
 # CXXFLAGS+=-mcpu=ultrasparc
 # endif
 
-all: canonical
+all: canonical config_1 config_2 config_3 config_4
 
 FILES = table.o hashjoin.o hashjoinvip.o metrics.o
 
@@ -34,5 +35,12 @@ clean:
 
 canonical: $(FILES) canonical.cpp
 
-tpch: $(FILES) tpch.cpp
+config_1: $(FILES) config_1.cpp
 
+config_2: $(FILES) config_2.cpp
+
+config_3: $(FILES) config_3.cpp
+
+config_4: $(FILES) config_4.cpp
+
+tpch: $(FILES) tpch.cpp

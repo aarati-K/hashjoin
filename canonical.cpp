@@ -10,12 +10,18 @@
 // using namespace libconfig;
 using namespace std;
 
-int main() {
+int main(int argc, char** argv) {
+    // Initialize random seed
+    if (argc > 1) {
+        uint seed = stoi(argv[1]);
+        srandom(seed);
+    }
+
     Table fact, dim;
-    fact.addCol(CT_INT, sizeof(int));
-    fact.addCol(CT_INT, sizeof(int));
-    dim.addCol(CT_INT, sizeof(int));
-    dim.addCol(CT_INT, sizeof(int));
+    fact.addCol(CT_LONG, sizeof(ulong));
+    fact.addCol(CT_LONG, sizeof(ulong));
+    dim.addCol(CT_LONG, sizeof(ulong));
+    dim.addCol(CT_LONG, sizeof(ulong));
 
     // Load the tables
     fact.loadFromFile(string("data/fact.tbl"), '|');

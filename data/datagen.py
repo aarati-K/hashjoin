@@ -1,14 +1,27 @@
 import random
+import sys
 
-d = 1500000
-f = 10*d
+l = len(sys.argv)
+if l < 4:
+    print "Usage: python datagen.py <zipf> <card_d> <ratio_d_to_f> {<seed>}"
+    quit()
+
+zipf = float(sys.argv[1])
+d = int(sys.argv[2])
+ratio_d_to_f = int(sys.argv[3])
+f = ratio_d_to_f*d
+
+if l > 4:
+    seed = int(sys.argv[4])
+    random.seed(seed)
 
 # Generate the dim column
 dim = range(1, d+1)
-random.shuffle(dim)
+
+for i in range(5):
+    random.shuffle(dim)
 
 prob = [0]*d
-zipf = 2
 for i in range(d):
     prob[i] = 1.0/pow(i+1, zipf)
 
@@ -34,9 +47,9 @@ while i < f:
     i += 1
     j += 1
 
-for i in range(3):
-    random.shuffle(fact)
-    random.shuffle(dim)
+# for i in range(3):
+#     random.shuffle(fact)
+#     random.shuffle(dim)
 
 dimfile = open('dim.tbl', 'w')
 for i in dim:

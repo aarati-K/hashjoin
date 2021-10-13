@@ -3,6 +3,9 @@
 #include <time.h>
 #include <sys/time.h>
 #include <sys/types.h>
+// #include <stack>
+// #include <fstream>
+#include <x86intrin.h>
 
 #include "table.h"
 #include "metrics.h"
@@ -13,7 +16,7 @@ using namespace std;
 #define _KV_
 
 typedef struct KV {
-    int key = 0;
+    ulong key = 0;
     void* ptr = NULL;       // ptr to data
     struct KV* next = NULL;
 } KV;
@@ -24,27 +27,28 @@ typedef struct KV {
 #define _HASHJOINVIP_H_
 
 typedef struct AccessCount {
-    uint8_t count = 0;
-    struct AccessCount *next = NULL;
+    uint8_t count[4];
+    int next = 0;   // index into the acc_entries array
 } AccessCount;
 
 class Hashjoinvip {
 public:
     Hashjoinvip();
     void initHashmap (int n);
-    void insert (int key, void* ptr);
+    void insert (ulong key, void* ptr);
     void *exec(Table &fact, int factcol, Table &dim, int dimcol);
 protected:
+    ulong _murmurHash(ulong);
     void build();
 private:
-    void* output;
+    void** output;
     KV **dict;
     KV *entries;
-    AccessCount **acc_dict;
     AccessCount *acc_entries;
     int entriesOffset;
+    int accessesOffset;
     int max_entries;
-    int hashmap_size;
+    ulong hashmap_size;
     int hashpower;
     uint prime = 472882027;
     bool initialized = false;
