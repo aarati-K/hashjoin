@@ -1,32 +1,12 @@
-
-.PHONY: all clean distclean
-
-include system.inc
+.PHONY: all clean
 
 CXX=g++
-# CPPFLAGS=-Idist/include/
-#CPPFLAGS+=-DPREFETCH
-#CPPFLAGS+=-DOUTPUT_AGGREGATE
-#CPPFLAGS+=-DOUTPUT_WRITE_NT
-#CPPFLAGS+=-DOUTPUT_WRITE_NORMAL
-# CPPFLAGS=-DOUTPUT_ASSEMBLE
-#CPPFLAGS+=-DDEBUG #-DDEBUG2
-# CXXFLAGS=$(SYSFLAGS)
-#CXXFLAGS+=-g -O0 #-Wall
 CXXFLAGS=-O3
-CXXFLAGS+=-mclflushopt
-# LDFLAGS=-Ldist/lib/
-# LDLIBS=-lconfig++ -lpthread
+CXXFLAGS+=-march=native
 
-# ifeq ($(HOSTTYPE),sparc)
-# LDLIBS+=-lcpc
-# CXXFLAGS+=-mcpu=ultrasparc
-# endif
-
-all: canonical config_1 config_2 config_3 config_4
+all: canonical
 
 FILES = table.o hashjoin.o hashjoinvip.o metrics.o
-
 
 clean:
 	rm -f *.o
@@ -35,12 +15,3 @@ clean:
 
 canonical: $(FILES) canonical.cpp
 
-config_1: $(FILES) config_1.cpp
-
-config_2: $(FILES) config_2.cpp
-
-config_3: $(FILES) config_3.cpp
-
-config_4: $(FILES) config_4.cpp
-
-tpch: $(FILES) tpch.cpp
