@@ -1,13 +1,10 @@
 #include <cstdlib>
 #include <iostream>
-#include <string>
-// #include <libconfig.h++>
 
 #include "table.h"
 #include "hashjoin.h"
 #include "hashjoinvip.h"
 
-// using namespace libconfig;
 using namespace std;
 
 int main(int argc, char** argv) {

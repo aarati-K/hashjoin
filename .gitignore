@@ -8,3 +8,4 @@ config_4
 plots/*
 *.tbl
 SkewedDataGenerator/*
+*wiscer*

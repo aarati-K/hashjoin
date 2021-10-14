@@ -1,62 +1,74 @@
 import random
 import sys
+import os
+import struct
 
+# Parse args
 l = len(sys.argv)
 if l < 4:
     print "Usage: python datagen.py <zipf> <card_d> <ratio_d_to_f> {<seed>}"
     quit()
 
 zipf = float(sys.argv[1])
-d = int(sys.argv[2])
+dim = int(sys.argv[2])
 ratio_d_to_f = int(sys.argv[3])
-f = ratio_d_to_f*d
+fact = ratio_d_to_f*dim
 
 if l > 4:
     seed = int(sys.argv[4])
-    random.seed(seed)
+else:
+    seed = 0
 
-# Generate the dim column
-dim = range(1, d+1)
+# Download wiscer if not present
+if not os.path.isdir("wiscer"):
+    os.system("git clone https://github.com/aarati-K/wiscer.git")
 
-for i in range(5):
-    random.shuffle(dim)
+# Generate the workload file
+workload_str = "zipf={}" + '\n' + \
+    "initialSize={}" + '\n' + \
+    "operationCount={}" + '\n' + \
+    "distShiftFreq={}" + '\n' + \
+    "distShiftPrct=0" + '\n' + \
+    "fetchProportion=1" + '\n' + \
+    "insertProportion=0" + '\n' + \
+    "deleteProportion=0" + '\n' + \
+    "storageEngine=none" + '\n'
+workload = workload_str.format(zipf, dim, fact, fact+1)
+# print workload
 
-prob = [0]*d
-for i in range(d):
-    prob[i] = 1.0/pow(i+1, zipf)
+# Store workload
+f = open("wiscer/workloads/hashjoin", "w")
+f.write(workload)
+f.close()
 
-cum = sum(prob)
-for i in range(d):
-    prob[i] = prob[i]/cum
-    prob[i] = prob[i]*f
+# Run Wiscer
+os.chdir("wiscer/")
+os.system("make store")
+os.system("./benchmark.out workloads/hashjoin {}".format(seed))
+os.chdir("../")
 
-fact = [0]*f
-i = 0
-for j in range(d):
-    for k in range(int(round(prob[j]))):
-        fact[i] = dim[j]
-        i += 1
-        if (i == f):
-            break
-    if (i == f):
-        break
-
-j = 0;
-while i < f:
-    fact[i] = dim[j]
-    i += 1
-    j += 1
-
-# for i in range(3):
-#     random.shuffle(fact)
-#     random.shuffle(dim)
+# Parse the workload files generated in Wiscer
+f = open("wiscer/keys", "rb")
+content = f.read()
+num_keys = len(content)/8
+if num_keys != dim:
+    print "Num keys do not match!"
+keys = struct.unpack("l"*num_keys, content)
+f.close()
 
 dimfile = open('dim.tbl', 'w')
-for i in dim:
+for i in keys:
     dimfile.write("{}|{}\n".format(i, i))
 dimfile.close()
 
+f = open("wiscer/ops", "rb")
 factfile = open('fact.tbl', 'w')
-for i in fact:
-    factfile.write("{}|{}\n".format(i, i))
+content = f.read()
+num_ops = len(content)/9
+if num_ops != fact:
+    print "Num ops do not match!"
+for i in range(num_ops):
+    op = struct.unpack('l', content[(9*i+1):(9*i+9)])[0]
+    factfile.write("{}|{}\n".format(op, op))
+f.close()
 factfile.close()
