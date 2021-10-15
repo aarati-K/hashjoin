@@ -21,8 +21,6 @@ $ ./run.sh > output.txt
 $ python2 parse_results.py output.txt
 Dimension Cardinality |R| = 12000000
 Ratio |R|:|S| = 1:16
-Dimension Cardinality: 12000000
-Ratio: 16
 +--------------+---------------------------+-----------------------+--------------------------------+
 | Skew level   |   Median Time Default (s) |   Median Time VIP (s) | Time VIP vs Default Hashjoin   |
 +==============+===========================+=======================+================================+
