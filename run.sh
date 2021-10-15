@@ -3,10 +3,10 @@
 make clean && make
 for d in {12000000,}
 do
-    echo "Dimension Cardinality: ${d}"
+    echo "Dimension Cardinality |R| = ${d}"
     for r in {16,}
     do
-        echo "Ratio: ${r}"
+        echo "Ratio |R|:|S| = 1:${r}"
         for z in {0,1,2,3}
         do
             echo "Zipf: ${z}"
