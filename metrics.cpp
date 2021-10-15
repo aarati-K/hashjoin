@@ -90,6 +90,7 @@ void getMetricsEnd(Metrics &m) {
 }
 
 void printMetrics(Metrics &m) {
+#if _COLLECT_METRICS_
     cout << "| " << m.total_time << " "
         << m.displacement << " "
         << m.l3Miss << " "
@@ -99,4 +100,7 @@ void printMetrics(Metrics &m) {
         << m.build_cycles << " "
         << m.learn_cycles << " "
         << m.probe_and_materialize_cycles << endl;
+#else
+    cout << "| " << m.total_time << " " << m.displacement << endl;
+#endif
 }
