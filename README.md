@@ -21,21 +21,21 @@ $ ./run.sh > output.txt
 $ python2 parse_results.py output.txt
 Dimension Cardinality |R| = 12000000
 Ratio |R|:|S| = 1:16
+Dimension Cardinality: 12000000
+Ratio: 16
 +--------------+---------------------------+-----------------------+--------------------------------+
 | Skew level   |   Median Time Default (s) |   Median Time VIP (s) | Time VIP vs Default Hashjoin   |
 +==============+===========================+=======================+================================+
-| Zipf: 0      |                     18.49 |                 18.65 | +0.9%                          |
+| Zipf: 0      |                      18.5 |                  18.7 | +0.9%                          |
 +--------------+---------------------------+-----------------------+--------------------------------+
-| Zipf: 1      |                     14.17 |                 11.52 | -18.7%                         |
+| Zipf: 1      |                      14.2 |                  11.5 | -18.7%                         |
 +--------------+---------------------------+-----------------------+--------------------------------+
-| Zipf: 2      |                      3.38 |                  2.62 | -22.5%                         |
+| Zipf: 2      |                       3.4 |                   2.6 | -22.5%                         |
 +--------------+---------------------------+-----------------------+--------------------------------+
-| Zipf: 3      |                      2.74 |                  2.39 | -12.8%                         |
+| Zipf: 3      |                       2.7 |                   2.4 | -12.8%                         |
 +--------------+---------------------------+-----------------------+--------------------------------+
-
-
 ```
 
-The script `run.sh` tests 10 different datasets (generated using different random seeds) for each level of skew, and the script `parse_results.py` reports the median execution time for the two hashjoin implementations. The `python-tabulate` library is required for the `parse_results.py` script to work.
+The script `run.sh` tests 10 different datasets (generated using different random seeds) for each level of skew, and the script `parse_results.py` reports the median execution time for the two hashjoin implementations. It take approximately 6 hours for the script to finish running. The `python-tabulate` library is required for the `parse_results.py` script to work.
 
 Collecting hardware metrics is disabled by default, and requires following the steps detailed in the [Wiscer](https://github.com/aarati-K/wiscer) repository to program the performance monitoring unit (PMU) in Intel processors. Collection of hardware metrics can be enabled by setting the flag `_COLLECT_METRICS_` in file `metrics.h`.

@@ -45,8 +45,8 @@ for line in f:
         for i in range(len(median_time_default)):
             row = []
             row.append(workload_labels[i])
-            row.append("{0:.2f}".format(median_time_default[i]/1000000.0))
-            row.append("{0:.2f}".format(median_time_vip[i]/1000000.0))
+            row.append("{0:.1f}".format(median_time_default[i]/1000000.0))
+            row.append("{0:.1f}".format(median_time_vip[i]/1000000.0))
             reduction = 100*(median_time_vip[i]/float(median_time_default[i]) - 1)
             row.append("{0:+.1f}%".format(reduction))
             table.append(row)
