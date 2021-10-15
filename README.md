@@ -1,14 +1,14 @@
 # Canonical PK-FK Hashjoin
 
-This is an implementation of the canonical join query, namely:
+This is an implementation of the canonical join query:
 ```
 SELECT *
 FROM R, S
 WHERE R.pk = S.fk
 ```
-Here R, S are the dimension and fact tables respectively with a primary key-foreign key (PK-FK) dependency. We implement the canonical hash join algorithm, which involves building a hash table from the keys in R, followed by probing the hash table for the rows in S. We assume that R and S have two columns (key, payload) with 8-byte attributes (16-byte tuples).
+where the dimension table `R` and fact table `S` have a primary key-foreign key (PK-FK) dependency. We implement the canonical hash join algorithm, which involves building a hash table from the keys in `R`, followed by probing the hash table for the rows in `S`. We assume that `R` and `S` have two columns (key, payload) with 8-byte integer attributes (16-byte tuples).
 
-Skew can arise in PK-FK relations when some keys occur more frequently than others in the outer relation S. Internally, we use [Wiscer](https://github.com/aarati-K/wiscer) to generate data with different levels of skew.
+Skew can arise in PK-FK relations when some keys occur more frequently than others in the outer relation `S`. Internally, we use [Wiscer](https://github.com/aarati-K/wiscer) to generate data with different levels of skew.
 
 We test two hash table implementations:
 * *Default hashjoin* uses the vanilla implementation of chained hash table.
@@ -36,8 +36,6 @@ Ratio |R|:|S| = 1:16
 
 ```
 
-The `python-tabulate` library is required for the python script to work correctly.
+The script `run.sh` tests 10 different datasets (generated using different random seeds) for each level of skew, and the script `parse_results.py` reports the median execution time for the two hashjoin implementations. The `python-tabulate` library is required for the `parse_results.py` script to work.
 
-The `run.sh` script tests 10 different datasets (generated using different random seeds) for each level of skew, and the `parse_results.py` script reports the median execution time for the two hashjoin implementations.
-
-Collecting hardware metrics is disabled by default, and requires following the steps detailed in the [Wiscer](https://github.com/aarati-K/wiscer) repository to program the performance monitoring unit (PMU) in Intel processors.
+Collecting hardware metrics is disabled by default, and requires following the steps detailed in the [Wiscer](https://github.com/aarati-K/wiscer) repository to program the performance monitoring unit (PMU) in Intel processors. Collection of hardware metrics can be enabled by setting the flag `_COLLECT_METRICS_` in file `metrics.h`.
