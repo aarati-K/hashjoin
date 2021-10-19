@@ -44,9 +44,10 @@ The script `run.sh` tests 10 different datasets (generated using different rando
 
 1. `python-tabulate` - The `python-tabulate` library is required for the `parse_results.py` script to work.
 
-2. *Hardware Metrics* - Collecting hardware metrics is disabled by default, and requires following the steps detailed in the [Wiscer](https://github.com/aarati-K/wiscer) repository to program the performance monitoring unit (PMU) in Intel processors. Collection of hardware metrics can be enabled by setting the flag `_COLLECT_METRICS_` in file `metrics.h`.
+2. *Hardware Metrics* - Collecting hardware metrics is disabled by default, and requires following the steps detailed in the [Wiscer](https://github.com/aarati-K/wiscer) repository to program the performance monitoring unit (PMU) in Intel processors. Collection of hardware metrics can be enabled by setting the flag `_COLLECT_METRICS_` in file `metrics.h`.\
+`#define _COLLECT_METRICS_ 1`
 
-3. *Intel Intrinsics* - Intel Intrinsics libraries might not be available for some platforms, in which case the flag `_INTEL_INTRINSICS_` in file `hashjoinvip.h` should be disabled.
-```
+3. *Intel Intrinsics* - Intel Intrinsics libraries might not be available for some platforms, in which case the flag `_INTEL_INTRINSICS_` in file `hashjoinvip.h` should be disabled.\
+`
 #define _INTEL_INTRINSICS_ 0
-```
+`
