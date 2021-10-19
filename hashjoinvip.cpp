@@ -132,9 +132,11 @@ void* Hashjoinvip::exec(Table &fact, int factcol, Table &dim, int dimcol) {
         }
         addr = (char*)addr + incr;
     }
+    #if _INTEL_INTRINSICS_
     for (ulong addr=0; addr < (2*max_entries+1)*sizeof(AccessCount); addr += 64) {
         _mm_clflushopt((char*)acc_entries+addr);
     }
+    #endif
     m.learn_cycles = rdpmc_core_cycles() - cycles;
 
     cycles = rdpmc_core_cycles();

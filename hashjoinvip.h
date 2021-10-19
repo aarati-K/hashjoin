@@ -5,7 +5,11 @@
 #include <sys/types.h>
 // #include <stack>
 // #include <fstream>
+#define _INTEL_INTRINSICS_ 1
+
+#if _INTEL_INTRINSICS_
 #include <x86intrin.h>
+#endif
 
 #include "table.h"
 #include "metrics.h"
