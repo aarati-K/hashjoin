@@ -1,5 +1,7 @@
 # Canonical PK-FK Hashjoin
 
+## Overview
+
 This is an implementation of the canonical join query:
 ```
 SELECT *
@@ -13,6 +15,8 @@ Skew can arise in PK-FK relations when some keys occur more frequently than othe
 We test two hash table implementations:
 * *Default hashjoin* uses the vanilla implementation of chained hash table.
 * *VIP hashjoin* uses the VIP hash table to learn and adapt to the skew in the data.
+
+## Building and Running
 
 To compare the two hashjoin implementations, run:
 
@@ -34,6 +38,15 @@ Ratio |R|:|S| = 1:16
 +--------------+---------------------------+-----------------------+--------------------------------+
 ```
 
-The script `run.sh` tests 10 different datasets (generated using different random seeds) for each level of skew, and the script `parse_results.py` reports the median execution time for the two hashjoin implementations. It take approximately 6 hours for the script to finish running. The `python-tabulate` library is required for the `parse_results.py` script to work.
+The script `run.sh` tests 10 different datasets (generated using different random seeds) for each level of skew, and the script `parse_results.py` reports the median execution time for the two hashjoin implementations. It take approximately 6 hours for the script to finish running.
 
-Collecting hardware metrics is disabled by default, and requires following the steps detailed in the [Wiscer](https://github.com/aarati-K/wiscer) repository to program the performance monitoring unit (PMU) in Intel processors. Collection of hardware metrics can be enabled by setting the flag `_COLLECT_METRICS_` in file `metrics.h`.
+## System Requirements
+
+1. `python-tabulate` - The `python-tabulate` library is required for the `parse_results.py` script to work.
+
+2. *Hardware Metrics* - Collecting hardware metrics is disabled by default, and requires following the steps detailed in the [Wiscer](https://github.com/aarati-K/wiscer) repository to program the performance monitoring unit (PMU) in Intel processors. Collection of hardware metrics can be enabled by setting the flag `_COLLECT_METRICS_` in file `metrics.h`.
+
+3. *Intel Intrinsics* - Intel Intrinsics libraries might not be available for some platforms, in which case the flag `_INTEL_INTRINSICS_` in file `hashjoinvip.h` should be disabled.
+```
+#define _INTEL_INTRINSICS_ 0
+```
