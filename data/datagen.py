@@ -32,6 +32,7 @@ workload_str = "zipf={}" + '\n' + \
     "fetchProportion=1" + '\n' + \
     "insertProportion=0" + '\n' + \
     "deleteProportion=0" + '\n' + \
+    "keyPattern=sequential" + '\n' + \
     "storageEngine=none" + '\n'
 workload = workload_str.format(zipf, dim, fact, fact+1)
 # print workload
